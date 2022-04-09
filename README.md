@@ -7,6 +7,7 @@ export CPATH=${CPATH}:/usr/local/opt/tbb@2020_u3/include
 export LIBRARY_PATH=${LIBRARY_PATH}:/usr/local/opt/tbb@2020_u3/lib
 cd main/sim/build
 export GAZEBO_PLUGIN_PATH=${GAZEBO_PLUGIN_PATH}:main/sim/build
+cd main/sim/build
 cmake ../
 make
 gazebo world_edit.world
