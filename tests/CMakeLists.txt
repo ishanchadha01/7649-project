@@ -1,0 +1,1 @@
+message(STATUS "There are no tests to run.");
