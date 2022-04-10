@@ -1,5 +1,5 @@
 <?xml version ='1.0'?>
-<sdf version ='1.4'>
+<sdf version ='1.7'>
   <world name='default'>
 
     <gui>
@@ -16,17 +16,9 @@
       <uri>model://sun</uri>
     </include>
 
-    <model name="arena">
-      <pose>0 0 0  0 0 0</pose>
-      <static>true</static>
-      <link name="body">
-        <visual name="visual">
-          <geometry>
-            <mesh><uri>file://basic_arena_v2.dae</uri></mesh>
-          </geometry>
-        </visual>
-      </link>
-    </model>
+    <include>
+      <uri>model://arena</uri>
+    </include>
 
     <plugin filename="libworld_edit.so" name="world_edit"/>
   </world>
