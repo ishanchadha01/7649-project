@@ -30,6 +30,7 @@ do
 done
 
 _cmake=/usr/bin/cmake
+[ ! -d "/usr/bin/cmake" ] && _cmake=/usr/local/bin/cmake
 
 proj_dir=$(pwd)
 build_dir=$proj_dir/build
