@@ -6,7 +6,20 @@ project(
   DESCRIPTION "Implementation of Field-Aided RRT for path planning in a partially observable environment"
   LANGUAGES CXX
   )
-
+function(dump_cmake_variables)
+  get_cmake_property(_variableNames VARIABLES)
+  list (SORT _variableNames)
+  foreach (_variableName ${_variableNames})
+    if (ARGV0)
+      unset(MATCHED)
+      string(REGEX MATCH ${ARGV0} MATCHED ${_variableName})
+      if (NOT MATCHED)
+        continue()
+      endif()
+    endif()
+    message(STATUS "${_variableName}=${${_variableName}}")
+  endforeach()
+endfunction()
 
 # Only do these if this is the main project, and not if it is included through add_subdirectory
 if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
@@ -21,11 +34,20 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
 
 endif()
 
+# Add TBB for OSX
+if (APPLE)
+
+  set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH}:/usr/local/opt/tbb@2020_u3)
+  set(ENV{CPATH} $ENV{CPATH}:/usr/local/opt/tbb@2020_u3/include)
+  set(ENV{LIBRARY_PATH} $ENV{LIBRARY_PATH}:/usr/local/opt/tbb@2020_u3/lib)
+
+endif()
+
 # Find pacakge dependencies
 # Adds gazebo::gazebo
 find_package(gazebo REQUIRED)
 message(STATUS "gazebo::gazebo version: ${gazebo_VERSION}")
-
+#dump_cmake_variables()
 # Compile all gazebo plugins
 add_subdirectory(plugins)
 

@@ -21,9 +21,14 @@ foreach (plugin_name ${plugins})
 # link_directories(${GAZEBO_LIBRARY_DIRS})
 # list(APPEND CMAKE_CXX_FLAGS "${GAZEBO_CXX_FLAGS}")
 
-  target_compile_options(${plugin_name} PRIVATE ${GAZEBO_CXX_FLAGS})
+
+
+  #target_compile_options(${plugin_name} PRIVATE ${GAZEBO_CXX_FLAGS})
   target_include_directories(${plugin_name} PUBLIC ${GAZEBO_INCLUDE_DIRS})
   target_link_libraries(${plugin_name} ${GAZEBO_LIBRARIES})
+  target_link_options(${plugin_name} PUBLIC -v)
+
+  target_link_directories(${plugin_name} PUBLIC ${GAZEBO_LIBRARY_DIRS})
 
   # optionally copy built plugins back into source tree
   # add_custom_command(TARGET ${plugin_name}
