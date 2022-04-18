@@ -6,7 +6,7 @@
       <camera name="user_default">
         <pose>-20 -20 10  0 0 0</pose>
       </camera>
-    </gui>  
+    </gui>
 
     <include>
       <uri>model://ground_plane</uri>
@@ -16,14 +16,14 @@
       <uri>model://sun</uri>
     </include>
 
-    <include>
+    <!-- <include>
       <uri>model://arena</uri>
-    </include>
+    </include> -->
 
     <include>
       <uri>model://robot</uri>
     </include>
 
-    <plugin filename="libworld_edit.so" name="world_edit"/>
+    <plugin filename="libsetup_arena.so" name="setup_arena"/>
   </world>
 </sdf>

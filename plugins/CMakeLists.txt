@@ -1,5 +1,5 @@
 set (plugins
-  world_edit
+  setup_arena
 )
 
 # set (PLUGIN_OUTPUT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/compiled)
@@ -26,7 +26,8 @@ foreach (plugin_name ${plugins})
   #target_compile_options(${plugin_name} PRIVATE ${GAZEBO_CXX_FLAGS})
   target_include_directories(${plugin_name} PUBLIC ${GAZEBO_INCLUDE_DIRS})
   target_link_libraries(${plugin_name} ${GAZEBO_LIBRARIES})
-  target_link_options(${plugin_name} PUBLIC -v)
+  # target_link_options(${plugin_name} PUBLIC ${GAZEBO_LDFLAGS})
+  # target_link_options(${plugin_name} PUBLIC -v)
 
   target_link_directories(${plugin_name} PUBLIC ${GAZEBO_LIBRARY_DIRS})
 
