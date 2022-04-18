@@ -35,6 +35,12 @@ do
     esac
 done
 
+#install multiview from npm if necessary
+# if ! command -v multiview >/dev/null; then
+#     echo "Installing multiview..."
+#     npm install -g multiview
+# fi
+
 proj_dir=$(pwd)
 build_dir=$proj_dir/build
 
@@ -48,9 +54,17 @@ world_dir=$proj_dir/worlds
 
 listener_dir=$proj_dir/listener
 
-./build.sh $_r
+build_and_run() {
+    ./build.sh $_r
 
-echo "Project built! Running Gazebo..."
+    echo "Project built! Running Gazebo..."
+    gazebo "$world_dir/$world_name.world" $@
+}
+build_and_run
+# multiview [ build_and_run ]
+# echo $$
+# echo $BASHPID
+# pid=$BASHPID
+# (build_and_run | multiview -s) & (./listener | multiview -s) & multiview
 
-# gazebo "$world_dir/$world_name.world" $@
-(trap 'kill 0' SIGINT; gazebo "$world_dir/$world_name.world" $@ & ./listener)
+# (trap 'kill 0' SIGINT; (build_and_run | multiview -s) & (./listener | multiview -s) & multiview)
