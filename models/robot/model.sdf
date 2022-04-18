@@ -177,5 +177,13 @@
       <right_joint>right_wheel_hinge</right_joint>
       <torque>5</torque>
     </plugin>
+    <include>
+      <uri>model://hokuyo</uri>
+      <pose>10.2 10 5.2 0 0 0</pose>
+    </include>
+    <joint name="hokuyo_joint" type="fixed">
+      <child>hokuyo::link</child>
+      <parent>chassis</parent>
+    </joint>
   </model>
 </sdf>
