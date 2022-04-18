@@ -35,6 +35,8 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
 endif()
 
 # Add TBB to path variables
+set(LDFLAGS -L/usr/local/opt/tbb@2020/lib)
+set(CPPFLAGS -I/usr/local/opt/tbb@2020/include)
 set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH}:/usr/local/opt/tbb@2020_u3)
 set(ENV{CPATH} $ENV{CPATH}:/usr/local/opt/tbb@2020_u3/include)
 set(ENV{LIBRARY_PATH} $ENV{LIBRARY_PATH}:/usr/local/opt/tbb@2020_u3/lib)
@@ -46,6 +48,7 @@ message(STATUS "gazebo::gazebo version: ${gazebo_VERSION}")
 #dump_cmake_variables()
 # Compile all gazebo plugins
 add_subdirectory(plugins)
+add_subdirectory(listener)
 
 # The executable code is here
 # add_subdirectory(apps)

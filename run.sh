@@ -40,6 +40,8 @@ export GAZEBO_MODEL_PATH="$model_dir":$GAZEBO_MODEL_PATH
 
 world_dir=$proj_dir/worlds
 
+listener_dir=$proj_dir/listener
+
 ./build.sh
 
 echo "Project built! Running Gazebo..."
