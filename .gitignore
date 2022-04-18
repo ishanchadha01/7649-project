@@ -3,7 +3,7 @@ build
 ./**/build/**
 ./**/build/**/*
 
-listener
+./listener
 
 .DS_Store
 **/.DS_Store

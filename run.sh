@@ -51,4 +51,6 @@ listener_dir=$proj_dir/listener
 ./build.sh $_r
 
 echo "Project built! Running Gazebo..."
-gazebo "$world_dir/$world_name.world" $@
+
+# gazebo "$world_dir/$world_name.world" $@
+(trap 'kill 0' SIGINT; gazebo "$world_dir/$world_name.world" $@ & ./listener)
