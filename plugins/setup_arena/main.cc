@@ -10,6 +10,8 @@
 
 #include <string>
 
+constexpr uint32_t NUM_OBSTACLES = 100;
+
 void gazebo::SetupArena::Load(physics::WorldPtr _parent, sdf::ElementPtr _sdf) {
   this->initialize(_parent, _sdf);
   this->setupPhysics(_parent, _sdf);
@@ -90,11 +92,8 @@ void gazebo::SetupArena::setupArena(physics::WorldPtr _parent, sdf::ElementPtr _
   double maxX = 89.5;
   double minY = 0.5;
   double maxY = 89.5;
-  for (int i = 0; i < 10; i++) {
-    gazebo::common::Time::MSleep(1000);
-
-    // Demonstrate using a custom model name.
-    sdf::ElementPtr model = this->templateObstacleSdf.Root()->GetElement("model");
+  sdf::ElementPtr model = this->templateObstacleSdf.Root()->GetElement("model");
+  for (int i = 0; i < NUM_OBSTACLES; i++) {
     model->GetAttribute("name")->SetFromString("obstacle-"+std::to_string(i));
 
     this->factoryMsg.set_sdf(this->templateObstacleSdf.ToString());
@@ -102,31 +101,13 @@ void gazebo::SetupArena::setupArena(physics::WorldPtr _parent, sdf::ElementPtr _
     double x = minX + (maxX - minX) * rand() / (RAND_MAX + 1.0);
     double y = minY + (maxY - minY) * rand() / (RAND_MAX + 1.0);
     double z = 5;
-    printf("%f %f\n", x, y);
+    // printf("%f %f\n", x, y);
 
     msgs::Set(this->factoryMsg.mutable_pose(),
         ignition::math::Pose3d(
           ignition::math::Vector3d(x, y, z),
           ignition::math::Quaterniond(0, 0, 0)));
 
-    // model->GetElement("pose")->Set(std::to_string(x) + " " + std::to_string(y) + " " + std::to_string(z) + " 0 0 0");
-    // printf("%s\n", sphereSDF.ToString().c_str());
-
-    // _parent->InsertModelSDF(sphereSDF);
-    // Model file to load
-    // this->factoryMsg.set_sdf_filename("model://box");
-    // this->factoryMsg.set_allow_renaming(true);
-
-
-
-
-    // // Pose to initialize the model to
-    // msgs::Set(this->factoryMsg.mutable_pose(),
-    //     ignition::math::Pose3d(
-    //       ignition::math::Vector3d(x, y, z),
-    //       ignition::math::Quaterniond(0, 0, 0)));
-
-    // // Send the message
     this->publishAndClearFactoryMsg();
   }
 
