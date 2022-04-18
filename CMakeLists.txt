@@ -6,6 +6,8 @@ project(
   DESCRIPTION "Implementation of Field-Aided RRT for path planning in a partially observable environment"
   LANGUAGES CXX
   )
+
+
 function(dump_cmake_variables)
   get_cmake_property(_variableNames VARIABLES)
   list (SORT _variableNames)
@@ -48,10 +50,9 @@ message(STATUS "gazebo::gazebo version: ${gazebo_VERSION}")
 #dump_cmake_variables()
 # Compile all gazebo plugins
 add_subdirectory(plugins)
-add_subdirectory(listener)
 
-# The executable code is here
-# add_subdirectory(apps)
+# Compile the executables
+add_subdirectory(exec-src)
 
 
 # Testing only available if this is the main app

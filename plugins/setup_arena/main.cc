@@ -74,6 +74,8 @@ void gazebo::SetupArena::setupArena(physics::WorldPtr _parent, sdf::ElementPtr _
     double y = minY + (maxY - minY) * rand() / (RAND_MAX + 1.0);
     double z = 5;
 
+    printf("%f %f\n", x, y);
+
     // Pose to initialize the model to
     msgs::Set(this->factoryMsg.mutable_pose(),
         ignition::math::Pose3d(
