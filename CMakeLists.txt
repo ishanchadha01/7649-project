@@ -34,14 +34,10 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
 
 endif()
 
-# Add TBB for OSX
-if (APPLE)
-
-  set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH}:/usr/local/opt/tbb@2020_u3)
-  set(ENV{CPATH} $ENV{CPATH}:/usr/local/opt/tbb@2020_u3/include)
-  set(ENV{LIBRARY_PATH} $ENV{LIBRARY_PATH}:/usr/local/opt/tbb@2020_u3/lib)
-
-endif()
+# Add TBB to path variables
+set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH}:/usr/local/opt/tbb@2020_u3)
+set(ENV{CPATH} $ENV{CPATH}:/usr/local/opt/tbb@2020_u3/include)
+set(ENV{LIBRARY_PATH} $ENV{LIBRARY_PATH}:/usr/local/opt/tbb@2020_u3/lib)
 
 # Find pacakge dependencies
 # Adds gazebo::gazebo
