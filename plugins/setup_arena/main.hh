@@ -18,6 +18,7 @@ namespace gazebo {
    private:
     // functions
     void initialize(physics::WorldPtr _parent, sdf::ElementPtr _sdf);
+    void setupModels(physics::WorldPtr _parent, sdf::ElementPtr _sdf);
     void setupPhysics(physics::WorldPtr _parent, sdf::ElementPtr _sdf);
     void setupArena(physics::WorldPtr _parent, sdf::ElementPtr _sdf);
 
@@ -29,6 +30,8 @@ namespace gazebo {
     transport::PublisherPtr physicsPub;
     transport::PublisherPtr factoryPub;
     msgs::Factory factoryMsg;
+    // sdfs/models
+    sdf::SDF templateObstacleSdf;
   };
 
   // Register this plugin with the simulator

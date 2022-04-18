@@ -8,6 +8,8 @@
 #include "gazebo/physics/physics.hh"
 #include "gazebo/transport/transport.hh"
 
+#include <string>
+
 void gazebo::SetupArena::Load(physics::WorldPtr _parent, sdf::ElementPtr _sdf) {
   this->initialize(_parent, _sdf);
   this->setupPhysics(_parent, _sdf);
@@ -24,6 +26,35 @@ void gazebo::SetupArena::initialize(physics::WorldPtr _parent, sdf::ElementPtr _
   this->physicsPub = node->Advertise<msgs::Physics>("~/physics");
   // Create a publisher on the ~/factory topic
   this->factoryPub = node->Advertise<msgs::Factory>("~/factory");
+
+  // Load the SDFs for the models
+  this->setupModels(_parent, _sdf);
+}
+
+void gazebo::SetupArena::setupModels(physics::WorldPtr _parent, sdf::ElementPtr _sdf) {
+  this->templateObstacleSdf.SetFromString(
+        "<sdf version ='1.6'>\
+          <model name ='box'>\
+            <pose>1 0 0 0 0 0</pose>\
+            <link name ='link'>\
+              <pose>0 0 .5 0 0 0</pose>\
+              <collision name ='collision'>\
+                <geometry>\
+                  <box>\
+                    <size>1 1 1</size>\
+                  </box>\
+                </geometry>\
+              </collision>\
+              <visual name ='visual'>\
+                <geometry>\
+                  <box>\
+                    <size>1 1 1</size>\
+                  </box>\
+                </geometry>\
+              </visual>\
+            </link>\
+          </model>\
+        </sdf>");
 }
 
 void gazebo::SetupArena::setupPhysics(physics::WorldPtr _parent, sdf::ElementPtr _sdf) {
@@ -53,36 +84,49 @@ void gazebo::SetupArena::setupArena(physics::WorldPtr _parent, sdf::ElementPtr _
   // Send the message
   this->publishAndClearFactoryMsg();
 
-  // Model file to load
-  this->factoryMsg.set_sdf_filename("model://box");
-  this->factoryMsg.mutable_pose()->mutable_position()->set_x(0.5);
-  this->factoryMsg.mutable_pose()->mutable_position()->set_y(0.5);
-  this->factoryMsg.mutable_pose()->mutable_position()->set_z(5);
-  this->publishAndClearFactoryMsg();
+  
     
   double minX = 0.5;
   double maxX = 89.5;
   double minY = 0.5;
   double maxY = 89.5;
   for (int i = 0; i < 10; i++) {
-    // Model file to load
-    this->factoryMsg.set_sdf_filename("model://box");
-    this->factoryMsg.set_allow_renaming(true);
+    gazebo::common::Time::MSleep(1000);
 
+    // Demonstrate using a custom model name.
+    sdf::ElementPtr model = this->templateObstacleSdf.Root()->GetElement("model");
+    model->GetAttribute("name")->SetFromString("obstacle-"+std::to_string(i));
+
+    this->factoryMsg.set_sdf(this->templateObstacleSdf.ToString());
 
     double x = minX + (maxX - minX) * rand() / (RAND_MAX + 1.0);
     double y = minY + (maxY - minY) * rand() / (RAND_MAX + 1.0);
     double z = 5;
-
     printf("%f %f\n", x, y);
 
-    // Pose to initialize the model to
     msgs::Set(this->factoryMsg.mutable_pose(),
         ignition::math::Pose3d(
           ignition::math::Vector3d(x, y, z),
           ignition::math::Quaterniond(0, 0, 0)));
 
-    // Send the message
+    // model->GetElement("pose")->Set(std::to_string(x) + " " + std::to_string(y) + " " + std::to_string(z) + " 0 0 0");
+    // printf("%s\n", sphereSDF.ToString().c_str());
+
+    // _parent->InsertModelSDF(sphereSDF);
+    // Model file to load
+    // this->factoryMsg.set_sdf_filename("model://box");
+    // this->factoryMsg.set_allow_renaming(true);
+
+
+
+
+    // // Pose to initialize the model to
+    // msgs::Set(this->factoryMsg.mutable_pose(),
+    //     ignition::math::Pose3d(
+    //       ignition::math::Vector3d(x, y, z),
+    //       ignition::math::Quaterniond(0, 0, 0)));
+
+    // // Send the message
     this->publishAndClearFactoryMsg();
   }
 

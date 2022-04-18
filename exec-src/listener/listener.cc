@@ -40,7 +40,7 @@ int main(int _argc, char **_argv) {
   node->Init();
 
   // Listen to Gazebo world_stats topic
-  gazebo::transport::SubscriberPtr sub = node->Subscribe("~/world_stats", cb);
+  gazebo::transport::SubscriberPtr sub = node->Subscribe("~/physics", cb);
 
   // Busy wait loop...replace with your own code as needed.
   while (true) {
