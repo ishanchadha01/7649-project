@@ -2,6 +2,7 @@
 set -e
 
 world_name=main
+_r=
 while [[ $# -gt 0 ]]
 do
     case $1 in
@@ -10,12 +11,17 @@ do
             echo "Options:"
             echo "  -h, --help                      Print this help message"
             echo "  -w, --world [world]             Run the specified world file"
+            echo "  -r, --rebuild                   Rebuild files from scratch"
             echo "  -- [gazebo args...]             Forward the remaining args to gazebo"
             exit 0
             ;;
         -w|--world)
             world_name=$2
             shift
+            shift
+            ;;
+        -r|--rebuild)
+            _r=-r
             shift
             ;;
         --)
@@ -40,7 +46,7 @@ export GAZEBO_MODEL_PATH="$model_dir":$GAZEBO_MODEL_PATH
 
 world_dir=$proj_dir/worlds
 
-./build.sh
+./build.sh $_r
 
 echo "Project built! Running Gazebo..."
 gazebo "$world_dir/$world_name.world" $@

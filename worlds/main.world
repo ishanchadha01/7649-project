@@ -16,10 +16,10 @@
       <uri>model://sun</uri>
     </include>
 
-    <include>
+    <!-- <include>
       <uri>model://arena</uri>
-    </include>
+    </include> -->
 
-    <plugin filename="libworld_edit.so" name="world_edit"/>
+    <plugin filename="libsetup_arena.so" name="setup_arena"/>
   </world>
 </sdf>
