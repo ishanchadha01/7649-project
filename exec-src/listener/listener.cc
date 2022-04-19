@@ -39,8 +39,15 @@ int main(int _argc, char **_argv) {
   gazebo::transport::NodePtr node(new gazebo::transport::Node());
   node->Init();
 
+  std::string topic = "~/world_stats";
+  if (_argc >= 2) {
+    topic = _argv[1];
+  }
+
+  std::cout << "Subscribe to topic [" << topic << "]" << std::endl;
+
   // Listen to Gazebo world_stats topic
-  gazebo::transport::SubscriberPtr sub = node->Subscribe("~/physics", cb);
+  gazebo::transport::SubscriberPtr sub = node->Subscribe(topic, cb);
 
   // Busy wait loop...replace with your own code as needed.
   while (true) {
