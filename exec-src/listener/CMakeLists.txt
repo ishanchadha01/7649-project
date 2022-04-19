@@ -14,6 +14,7 @@ else()
 endif()
 
 add_executable(listener ${listener_SRCS})
+target_link_directories(listener PUBLIC ${GAZEBO_LIBRARY_DIRS})
 target_include_directories(listener PUBLIC ${GAZEBO_INCLUDE_DIRS})
 target_link_libraries(listener ${GAZEBO_LIBRARIES} pthread)
 
