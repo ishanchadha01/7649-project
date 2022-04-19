@@ -1,5 +1,6 @@
 set (plugins
   setup_arena
+  robot_control
 )
 
 # set (PLUGIN_OUTPUT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/compiled)
