@@ -21,14 +21,14 @@ if command -v conda >/dev/null; then
   conda deactivate
 fi
 
-if [ -f "devel/setup.sh" ]; then
-  echo "devel/setup.sh is present, sourcing it..."
-  source devel/setup.sh
+if [ -f "devel/setup.bash" ]; then
+  echo "devel/setup.bash is present, sourcing it..."
+  source devel/setup.bash
 fi
 
-if [ -f "install/setup.sh" ]; then
-  echo "install/setup.sh is present, sourcing it..."
-  source install/setup.sh
+if [ -f "install/setup.bash" ]; then
+  echo "install/setup.bash is present, sourcing it..."
+  source install/setup.bash
 fi
 
 # export ROS_DOMAIN_ID=69
