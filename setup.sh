@@ -26,4 +26,9 @@ if [ -f "devel/setup.sh" ]; then
   source devel/setup.sh
 fi
 
+if [ -f "install/setup.sh" ]; then
+  echo "install/setup.sh is present, sourcing it..."
+  source install/setup.sh
+fi
+
 # export ROS_DOMAIN_ID=69

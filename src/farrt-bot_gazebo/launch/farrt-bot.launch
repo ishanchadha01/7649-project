@@ -1,7 +1,7 @@
 <launch>
   <!-- We resume the logic in empty_world.launch, changing only the name of the world to be launched -->
   <include file="$(find gazebo_ros)/launch/empty_world.launch">
-    <arg name="world_name" value="$(find FARRT-bot_gazebo)/worlds/FARRT-bot.world"/>
+    <arg name="world_name" value="$(find farrt-bot_gazebo)/worlds/farrt-bot.world"/>
     <!-- more default parameters can be changed here -->
   </include>
 </launch>
