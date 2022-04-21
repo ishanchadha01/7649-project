@@ -21,6 +21,7 @@
 
 #include <iostream>
 
+
 /////////////////////////////////////////////////
 // Function is called everytime a message is received.
 void cb(ConstWorldStatisticsPtr &_msg) {
