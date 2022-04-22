@@ -103,3 +103,11 @@ class RRT(PartiallyObservablePlanner):
       return self.curr_pos
     return self.planned_path.pop()
 
+  def run(self):
+    self.plan()
+    while not self.world.reachedGoal(self.curr_pos, self.x_goal):
+      self.curr_pos = self.step()
+      found_new_obstacles = self.world.make_observations(self.curr_pos)
+      if found_new_obstacles:
+        self.plan()
+
