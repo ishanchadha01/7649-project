@@ -1,3 +1,4 @@
+from copy import deepcopy
 import random
 import math
 import tkinter as tk
@@ -19,7 +20,7 @@ class RRTX(PartiallyObservablePlanner):
     self.planned_path = []
 
     self.rrt_tree = [] # tree to calculate path to goal
-    self.step_size = 0.1
+    self.step_size = 0.5
     self.spatial_hash = [[] for _ in range(math.prod(self.world.dims))] # spatial hashmap flattened for d dims
     self.pq = PriorityQueue()
     self.n = 1000
@@ -41,7 +42,7 @@ class RRTX(PartiallyObservablePlanner):
     self.spatial_hash[hash_idx].append(node)
 
 
-  def spatial_hash_get(self, node):
+  def spatial_hash_get(self, node, fallback):
     # get nearest node from spatial hash approximately
     hash_idx = math.floor(node.coord[-1])
     for dim in range(len(self.world.dims)-1, 1, -1):
@@ -57,8 +58,7 @@ class RRTX(PartiallyObservablePlanner):
           return self.spatial_hash[hash_idx - bin_at_dist][-1]
         bin_at_dist += 1
       except:
-        return self.sample(self.x_start)
-
+        return deepcopy(fallback)
 
 
   def sample(self, goal_node):
@@ -71,11 +71,11 @@ class RRTX(PartiallyObservablePlanner):
   def extract_path(self, start):
     curr = self.rrt_tree[-1]
     path = [curr]
-    while curr != start:
+    while curr.coord != start.coord:
       print(curr.coord, start.coord)
       path.append(curr.parent)
       curr = curr.parent
-    return path
+    return list(reversed(path))
 
 
   def observe_world(self):
@@ -87,7 +87,8 @@ class RRTX(PartiallyObservablePlanner):
 
 
   def steer(self, x1, x2):
-    coord = tuple([self.step_size * (x2_d - x1_d) + x1_d for x1_d, x2_d in zip(x1.coord, x2.coord)])
+    factor = self.step_size / self.dist(x1, x2)
+    coord = tuple([factor * (x2_d - x1_d) + x1_d for x1_d, x2_d in zip(x1.coord, x2.coord)])
     return Node(coord=coord)
 
 
@@ -96,23 +97,28 @@ class RRTX(PartiallyObservablePlanner):
 
 
   def build_rrt_tree(self, start, goal):
-    x_rand = self.sample(goal)
-    x_new = self.steer(start, x_rand) # includes step function
-    if self.obstacle_free(x_rand, x_new):
-      self.rrt_tree.append(x_new)
-      x_new.parent = start
-      start.children.append(x_new)
+    self.rrt_tree.append(start)
+    begin = False
+    while not begin:
+      x_rand = self.sample(goal)
+      x_new = self.steer(start, x_rand) # includes step function
+      if self.obstacle_free(x_rand, x_new):
+        self.rrt_tree.append(x_new)
+        x_new.parent = start
+        start.children.append(x_new)
+        begin = True
     while self.dist(x_new, goal) >= self.eps:
       x_rand = self.sample(goal)
-      x_nearest = self.spatial_hash_get(x_rand) # use spatial hash to find nearest neighbor approximately 
+      x_nearest = self.spatial_hash_get(x_rand, start) # use spatial hash to find nearest neighbor approximately 
       x_new = self.steer(x_nearest, x_rand)
 
       if self.obstacle_free(x_rand, x_new):
         self.rrt_tree.append(x_new)
-        x_new.parent = x_rand
-        x_rand.children.append(x_new)
+        x_new.parent = x_nearest
+        x_nearest.children.append(x_new)
         self.spatial_hash_add(x_new) # add new node to spatial hashmap
-        
+        print(x_new.coord, x_nearest.coord)
+
     return self.rrt_tree
 
 
@@ -121,7 +127,7 @@ class RRTX(PartiallyObservablePlanner):
     root_node = self.x_goal
     curr_node = self.curr_pos
     self.rrt_tree = self.build_rrt_tree(root_node, curr_node)
-    self.planned_path = self.extract_path(curr_node)
+    self.planned_path = self.extract_path(root_node)
     step = 0
     while curr_node != self.x_goal:
       next_node = self.step()
@@ -141,19 +147,22 @@ class RRTX(PartiallyObservablePlanner):
     window = tk.Tk()
 
     # create canvas to plot rrt graph
-    canvas = tk.Canvas(window, bg="white", height=300, width=300)
-    python_green = "#476042"
-    canvas.create_oval(5, 5, 5, 5, fill=python_green)
-
-    # create buttons at the bottom to step through simulation
     window.rowconfigure([0,1], minsize=50, weight=1)
     window.columnconfigure([0,1], minsize=50, weight=1)
+    canvas = tk.Canvas(window, bg="white", height=100, width=100)
+    canvas.grid(row=0, column=0)
+    python_green = "#476042"
+    for node in self.rrt_tree:
+      canvas.create_oval(node.coord[0], node.coord[1], node.coord[0], node.coord[1], fill=python_green)
+
+    # create buttons at the bottom to step through simulation
     lbl_value = tk.Label(master=window, text=f"Step: {step}")
     lbl_value.grid(row=1, column=0)
     clicked = tk.BooleanVar(False)
     step_btn = tk.Button(master=window, text="Next", command=lambda: clicked.set(True))
     step_btn.grid(row=1, column=1, sticky="nsew")
-    window.wait_variable(clicked)
+    window.mainloop()
+    #window.wait_variable(clicked)
 
 
 if __name__=='__main__':
