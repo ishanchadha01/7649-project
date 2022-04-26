@@ -23,7 +23,6 @@ class RRTX(PartiallyObservablePlanner):
     self.thresh = 5
     self.rrt_tree = [] # tree to calculate path to goal
     self.step_size = 1
-    self.spatial_hash = [[[] for _ in range(self.world.dims[0])] for _ in range(self.world.dims[1])] # spatial hashmap flattened for d dims
     self.pq = PriorityQueue()
     self.n = 1000
     self.radius = math.floor((math.prod(self.world.dims) * math.log(self.n) / self.n) ** (1/2)) # radius of ball for neighbors
@@ -35,15 +34,7 @@ class RRTX(PartiallyObservablePlanner):
     return np.linalg.norm(np.array(x2.coord) - np.array(x1.coord))
 
 
-  def spatial_hash_add(self, node):
-    # add node to spatial hash
-    x = math.floor(node.coord[0])
-    y = math.floor(node.coord[1])
-    print(node.coord, x, y, np.array(self.spatial_hash).shape)
-    self.spatial_hash[x][y].append(node)
-
-
-  def spatial_hash_get(self, node, fallback):
+  def nearest(self, node, fallback):
     min_dist = float('inf')
     min_node = deepcopy(fallback)
     for node2 in self.rrt_tree:
@@ -51,33 +42,6 @@ class RRTX(PartiallyObservablePlanner):
         min_dist = self.dist(node, node2)
         min_node = node2
     return min_node
-    # # get nearest node from spatial hash approximately
-    # x = math.floor(node.coord[0])
-    # y = math.floor(node.coord[1])
-    # direction = [(1,0), (0,1), (-1,0), (0,-1)]
-    # dist = 0
-
-    # # search current bin and neighboring bins until neighbor found or out of bounds
-    # i = 0
-    # while True:
-    #   print((x,y))
-    #   i+=1
-    #   if i%2 == 0:
-    #     dist += 1
-    #   for d in range(0, dist):
-    #     x += direction[i%4][0]
-    #     y += direction[i%4][1]
-    #   try:
-    #     if len(self.spatial_hash[x][y]) > 0:
-    #       return random.choice(self.spatial_hash[x][y])
-    #   except:
-    #     min_dist = float('inf')
-    #     node_node = deepcopy(fallback)
-    #     for node2 in self.rrt_tree:
-    #       if self.dist(node, node2) < min_dist:
-    #         min_dist = self.dist(node, node2)
-    #         min_node = node2
-    #     return(min_node)
 
 
   def sample(self, goal_node):
@@ -144,19 +108,17 @@ class RRTX(PartiallyObservablePlanner):
         self.rrt_tree.append(x_new)
         x_new.parent = start
         start.children.append(x_new)
-        self.spatial_hash_add(x_new)
         begin = True
 
     i = 0
     while self.dist(x_new, goal) >= self.thresh:
       x_rand = self.sample(goal)
-      x_nearest = self.spatial_hash_get(x_rand, start) # use spatial hash to find nearest neighbor approximately 
+      x_nearest = self.nearest(x_rand, start) # use spatial hash to find nearest neighbor approximately 
       x_new = self.steer(x_nearest, x_rand)
       if self.obstacle_free(x_nearest, x_new):
         self.rrt_tree.append(x_new)
         x_new.parent = x_nearest
         x_nearest.children.append(x_new)
-        self.spatial_hash_add(x_new) # add new node to spatial hashmap
         i += 1
 
       # if i>1000:
