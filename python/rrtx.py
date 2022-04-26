@@ -20,9 +20,9 @@ class RRTX(PartiallyObservablePlanner):
     self.eps = kwargs.get('eps', .01)
     self.planned_path = []
 
-    self.thresh = 5
+    self.thresh = 1
     self.rrt_tree = [] # tree to calculate path to goal
-    self.step_size = 1
+    self.step_size = .2
     self.pq = PriorityQueue()
     self.n = 1000
     self.radius = math.floor((math.prod(self.world.dims) * math.log(self.n) / self.n) ** (1/2)) # radius of ball for neighbors
@@ -76,17 +76,14 @@ class RRTX(PartiallyObservablePlanner):
 
 
   def obstacle_free(self, x1, x2):
-    def lines_intersect(line1, line2):
-      (x00, y00), (x01, y01) = line1
-      (x10, y10), (x11, y11) = line2
-      d = x11*y01 - x01*y11 # determinant of the matrix [[x11 x01], [y11 y01]]
-      if d == 0: # parallel lines
-        return False
-      s = ((x00 - x10) * y01 - (y00 - y10) * x01) / d
-      t = -(-(x00 - x10) * y11 + (y00 - y10) * x11) / d
-      if 0 <= s <= 1 and 0 <= t <= 1:
-          return True
-      return False
+
+    def ccw(A,B,C):
+      return (C[1]-A[1]) * (B[0]-A[0]) > (B[1]-A[1]) * (C[0]-A[0])
+      
+    def lines_intersect(edge1, edge2):
+      A, B = edge1
+      C, D = edge2
+      return ccw(A,C,D) != ccw(B,C,D) and ccw(A,B,C) != ccw(A,B,D)
 
     for edge in self.world.obstacle_edges:
       # the path intersects with an obstacle edge, so it is not a valid path
