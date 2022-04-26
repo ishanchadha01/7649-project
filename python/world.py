@@ -8,7 +8,7 @@ Coord = TypeVar('Coord', bound=tuple)
 class World():
   def __init__(self):
     self.dims = [90, 90]
-    self.obstacles = set()
+    self.obstacle_edges = [((0, 40), (60, 40))]
 
   #@abstractmethod
   def reached_goal(position: Coord, goal: Coord) -> bool:
@@ -20,7 +20,9 @@ class World():
 
   #@abstractmethod
   def random_position(self) -> Coord:
-    return tuple([random.random() * dim for dim in self.dims])
+    out = tuple([random.random() * dim for dim in self.dims])
+    print(out)
+    return out
 
   #@abstractmethod
   def obstacle_detected(self) -> None:
