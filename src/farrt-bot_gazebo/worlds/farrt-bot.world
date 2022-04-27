@@ -2,9 +2,10 @@
 <sdf version ='1.7'>
   <world name='FARRT-bot world'>
 
-    <gui>
-      <camera name="user_default">
-        <pose>-20 -20 10  0 0 0</pose>
+    <gui fullscreen='0'>
+      <camera name='user_camera'>
+        <pose>4.927360 -4.376610 3.740080 0.000000 0.275643 2.356190</pose>
+        <view_controller>orbit</view_controller>
       </camera>
     </gui>
 
@@ -15,15 +16,5 @@
     <include>
       <uri>model://sun</uri>
     </include>
-
-    <!-- <include>
-      <uri>model://arena</uri>
-    </include> -->
-
-    <include>
-      <uri>model://robot</uri>
-    </include>
-
-    <plugin filename="libsetup_arena.so" name="setup_arena"/>
   </world>
 </sdf>

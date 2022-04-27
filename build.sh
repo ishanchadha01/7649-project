@@ -37,15 +37,36 @@ fi
 proj_dir=$(pwd)
 build_dir=$proj_dir/build
 
-if [ ! -d "$build_dir" ]; then
-   echo "'$build_dir' not found! Configuring CMake..."
-   ./configure.sh
-else
-   if [ "$rebuild" = true ]; then
-      echo "Deleting '$build_dir'..."
-      rm -rf $build_dir
-      ./configure.sh
-   fi
+# if [ ! -d "$build_dir" ]; then
+#    echo "'$build_dir' not found! Configuring CMake..."
+#    ./configure.sh
+# else
+#    if [ "$rebuild" = true ]; then
+#       echo "Deleting '$build_dir'..."
+#       rm -rf $build_dir
+#       ./configure.sh
+#    fi
+# fi
+
+# $_cmake --build "$build_dir" --config RelWithDebInfo --target $target -j 14 --
+
+build_type=Debug
+build_type=Release
+build_type=RelWithDebInfo
+
+_cc=/bin/clang-10
+if [ ! -x "$_cc" ]; then
+    _cc=/usr/bin/clang
+fi
+cxx=/bin/clang++-10
+if [ ! -x "$cxx" ]; then
+    cxx=/usr/bin/clang++
+fi
+# toolchain=$HOME/application-installs/vcpkg/scripts/buildsystems/vcpkg.cmake
+
+if [ "$rebuild" = true ]; then
+    rm -rf $build_dir
 fi
 
-$_cmake --build "$build_dir" --config RelWithDebInfo --target $target -j 14 --
+catkin_make -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=TRUE -DCMAKE_BUILD_TYPE:STRING=$build_type -DCMAKE_C_COMPILER:FILEPATH=$_cc -DCMAKE_CXX_COMPILER:FILEPATH=$cxx -DCMAKE_TOOLCHAIN_FILE:FILEPATH=$toolchain
+. devel/setup.bash
