@@ -21,7 +21,7 @@ class World():
   #@abstractmethod
   def random_position(self) -> Coord:
     out = tuple([random.random() * dim for dim in self.dims])
-    print(out)
+    # print(out)
     return out
 
   #@abstractmethod

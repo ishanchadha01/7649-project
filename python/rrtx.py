@@ -97,11 +97,11 @@ class RRTX(PartiallyObservablePlanner):
     begin = False
     while not begin:
       x_rand = self.sample(goal)
-      print(x_rand.coord)
+      # print(x_rand.coord)
       x_new = self.steer(start, x_rand) # includes step function
-      print(x_new.coord)
+      # print(x_new.coord)
       if self.obstacle_free(x_rand, x_new):
-        print('poop')
+        # print('poop')
         self.rrt_tree.append(x_new)
         x_new.parent = start
         start.children.append(x_new)
@@ -168,7 +168,7 @@ class RRTX(PartiallyObservablePlanner):
     # create buttons at the bottom to step through simulation
     lbl_value = tk.Label(master=window, text=f"Step: {step}")
     lbl_value.grid(row=1, column=0)
-    clicked = tk.BooleanVar(False)
+    clicked = tk.BooleanVar(value=False)
     step_btn = tk.Button(master=window, text="Next", command=lambda: clicked.set(True))
     step_btn.grid(row=1, column=1, sticky="nsew")
     window.mainloop()
