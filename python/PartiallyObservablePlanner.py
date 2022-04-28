@@ -10,6 +10,7 @@ class PartiallyObservablePlanner(ABC):
     self.x_start = x_start
     self.x_goal = x_goal
     self.curr_pos = deepcopy(x_start)
+    self.detected_edges = []
 
   @abstractmethod
   def step(self) -> Coord:
