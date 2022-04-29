@@ -210,7 +210,7 @@ class RRTX(PartiallyObservablePlanner):
 if __name__=='__main__':
   # extract run args run_count
   parser = argparse.ArgumentParser()
-  parser.add_argument('-rc', type=int, default=0)
+  parser.add_argument('-rc', type=int, required=True)
   args = parser.parse_args()
   run_count = args.rc
   
