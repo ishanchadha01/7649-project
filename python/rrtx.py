@@ -60,7 +60,7 @@ class RRTX(PartiallyObservablePlanner):
     return list(reversed(path))
 
 
-  def observe_world(self):
+  def update_obstacles(self):
     if self.world.obstacle_detected():
       self.reduce_inconsistency()
     if self.world.obstacle_vanished():
@@ -118,13 +118,6 @@ class RRTX(PartiallyObservablePlanner):
         x_nearest.children.append(x_new)
         i += 1
 
-      # if i>1000:
-      #   p = self.rrt_tree[-1]
-      #   p.children.append(goal)
-      #   goal.parent = p
-      #   self.rrt_tree.append(goal)
-      #   break
-
     return self.rrt_tree
 
 
@@ -136,8 +129,8 @@ class RRTX(PartiallyObservablePlanner):
     self.planned_path = self.extract_path(root_node)
     step = 0
     while curr_node != self.x_goal:
-      next_node = self.step()
-      self.observe_world()
+      next_node = self.planned_path.pop()
+      self.update_obstacles()
 
       if self.gui:
         self.render(step)
@@ -148,6 +141,7 @@ class RRTX(PartiallyObservablePlanner):
     if len(self.planned_path) == 0:
       return self.curr_pos
     return self.planned_path.pop()
+
 
   def render(self, step):
     window = tk.Tk()
