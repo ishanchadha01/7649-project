@@ -124,7 +124,7 @@ class PartiallyObservablePlanner(ABC):
     else:
       fig,ax = plt.subplots()
     post_render = kwargs.pop('post_render', None)
-    
+
     # render the planner state
     plot_planner(fig_ax=(fig,ax), world=self.world, observations=self.detected_obstacles, curr_pos=self.curr_pos, goal=self.x_goal, planned_path=self.planned_path, **self.get_render_kwargs(), **kwargs)
     # call postprocessing on the plt image if provided
@@ -152,14 +152,14 @@ class PartiallyObservablePlanner(ABC):
     if visualize or (save_step is None and not save_frame) or (self.display_every_n >= 1 and (save_step % self.display_every_n == 0)):
       plt.show()
     plt.close()
-  
+
   def save_gif(self) -> None:
     filenames = [os.path.join(self.tmp_img_dir, f) for f in sorted(os.listdir(self.tmp_img_dir)) if f.endswith('.png')]
     if len(filenames) == 0:
       print('No images to save into gif...')
       return
     # print('Rending gif from files: ', filenames)
-    
+
     delay = 10
     with imageio.get_writer(self.gif_output_path, mode='I') as writer:
       for i, filename in enumerate(filenames):
@@ -169,10 +169,10 @@ class PartiallyObservablePlanner(ABC):
         # delay step addition frames
         if filename[-8:-4] != '0000':
           need_delay = True
-        
+
         for t in range(delay if need_delay else 1):
           writer.append_data(image)
     print(f'Saved gif to {self.gif_output_path}')
-  
+
   def delete_tmps(self) -> None:
     shutil.rmtree(self.tmp_img_dir)

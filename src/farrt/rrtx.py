@@ -92,14 +92,29 @@ class RRTX(PartiallyObservablePlanner):
   def obstacle_free(self, x_nearest: Node, x_new: Node) -> bool:
     return not self.detected_obstacles.intersects(x_nearest.edgeTo(x_new))
 
+
   def build_rrtx_tree(self, start: Node, goal: Node) -> list[Node]:
-    self.rrtx_tree.clear()
-    self.rrtx_tree.append(start)
+    self.rrt_tree.clear()
+    self.rrt_tree.append(start)
+
+    # x_new = start
+    # begin = False
+    # while not begin:
+    #   x_rand = self.sample(goal)
+    #   # print(x_rand.coord)
+    #   x_new = self.steer(start, x_rand) # includes step function
+    #   # print(x_new.coord)
+    #   if self.obstacle_free(x_rand, x_new):
+    #     # print('poop')
+    #     self.rrt_tree.append(x_new)
+    #     x_new.parent = start
+    #     start.children.append(x_new)
+    #     begin = True
 
     i = 0
     while i < self.iters:
       x_rand = self.sample_free(goal)
-      x_nearest = self.nearest(x_rand, start) # use spatial hash to find nearest neighbor approximately 
+      x_nearest = self.nearest(x_rand, start) # use spatial hash to find nearest neighbor approximately
       x_new = self.steer(x_nearest, x_rand)
       if self.obstacle_free(x_nearest, x_new):
         self.rrtx_tree.append(x_new)
