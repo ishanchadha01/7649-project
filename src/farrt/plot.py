@@ -4,7 +4,7 @@ from matplotlib.patches import PathPatch
 from matplotlib.collections import PatchCollection
 
 from shapely.geometry import Polygon, Point
-from shapely.geometry.base import BaseGeometry
+from shapely.geometry.base import BaseGeometry, BaseMultipartGeometry
 import matplotlib.pyplot as plt
 from farrt.node import Node
 
@@ -46,18 +46,21 @@ def plot_points(points: list, ax=None, **kwargs):
   else:
     fig=None
   if len(points) > 0 and isinstance(points[0], Node):
+    kwargs_without_marker = {k:v for k,v in kwargs.items() if k != 'marker'}
+    if 'edgecolor' in kwargs:
+      kwargs_without_marker['color'] = kwargs_without_marker.pop('edgecolor')
+      # kwargs_without_marker.pop('edgecolor')
+      kwargs.pop('edgecolor')
     point: Node
     for point in points:
       if point.parent is not None:
-        kwargs_without_marker = {k:v for k,v in kwargs.items() if k != 'marker'}
-        if 'edgecolor' in kwargs:
-          kwargs_without_marker['color'] = kwargs_without_marker.pop('edgecolor')
-          # kwargs_without_marker.pop('edgecolor')
-          kwargs.pop('edgecolor')
         plot_line(ax, point.parent.coord, point.coord, marker='', linestyle='-', linewidth=kwargs_without_marker.pop('linewidth', 2), **kwargs_without_marker)
+  if 'edgecolor' in kwargs and len(points) > 0:
+    print('edgecolor not handled!')
+    print(len(points), points)
   for point in points:
-    pass
-    # plot_point(ax, point, **kwargs)
+    # pass
+    plot_point(ax, point, **kwargs)
   return fig,ax
 
 def plot_polygon(ax, poly, **kwargs):
@@ -95,9 +98,6 @@ def plot_polygons(polygons: list = None, dims=None, **kwargs):
     fig=None
   for polygon in polygons:
       plot_polygon(ax, polygon, **kwargs)
-  if dims is not None:
-    ax.set_xlim([0,dims[0]])
-    ax.set_ylim([0,dims[1]])
   #set aspect ratio to 1
   ratio = 1.0
   x_left, x_right = ax.get_xlim()
@@ -118,6 +118,8 @@ def plot_world(world: World, draw_obstacles: bool = True, **kwargs):
   plot_polygon(ax, world.getBoundingPoly(), facecolor=background_color, edgecolor=border_color, **kwargs)
   if draw_obstacles:
     plot_polygons(world.obstacles.geoms, dims=world.dims, ax=ax, facecolor=obstacle_color, edgecolor=obstacle_edge_color, **kwargs)
+  ax.set_xlim([0,world.dims[0]])
+  ax.set_ylim([0,world.dims[1]])
   return fig,ax
 
 def plot_planner(world: World = None, curr_pos: Node = None, goal:Node = None, observations: BaseGeometry = None, rrt_tree:list[Node] = None, planned_path:list[Node] = None, **kwargs):
@@ -125,19 +127,34 @@ def plot_planner(world: World = None, curr_pos: Node = None, goal:Node = None, o
     fig,ax = kwargs.pop('fig_ax')
   else:
     fig,ax = plt.subplots()
+  draw_intersections = kwargs.pop('draw_intersections', None)
+
   if world is not None:
-    plot_world(world, ax=ax, draw_obstacles=True, obstacle_color='black', obstacle_edge_color='red')
+    plot_world(world, ax=ax, draw_obstacles=kwargs.pop('draw_world_obstacles', True), obstacle_color='black', obstacle_edge_color='red')
   if observations is not None:
     if observations.is_empty:
       print('No observations to plot')
-    plot_polygons(observations, ax=ax, facecolor='green', edgecolor='blue')
+    else:
+      plot_polygons(observations, ax=ax, facecolor='green', edgecolor='blue')
+  
+  if draw_intersections is not None:
+    if draw_intersections.is_empty:
+      pass
+    elif isinstance(draw_intersections, BaseMultipartGeometry):
+      for intersection in draw_intersections.geoms:
+        plot_points(list(intersection.coords), ax=ax, marker="o", markersize=10, markeredgecolor="purple", markerfacecolor="purple", linewidth=3)
+    else:
+      plot_points(list(draw_intersections.coords), ax=ax, marker="o", markersize=10, markeredgecolor="purple", markerfacecolor="purple", linewidth=3)
+  
   if rrt_tree is not None:
     plot_points(rrt_tree, ax=ax, marker=".", markersize=3, markeredgecolor="yellow", markerfacecolor="yellow", edgecolor='yellow', linewidth=1)
   if planned_path is not None:
     plot_points(planned_path, ax=ax, marker=".", markersize=5, markeredgecolor="orange", markerfacecolor="orange", edgecolor='orange', linewidth=3)
+  
   if curr_pos is not None:
     plot_point(ax, curr_pos, marker=".", markersize=6, markeredgecolor="red", markerfacecolor="red")
   if goal is not None:
     plot_point(ax, goal, marker=".", markersize=6, markeredgecolor="green", markerfacecolor="green")
+  
   fig.set_size_inches(8,8)
   return fig,ax
