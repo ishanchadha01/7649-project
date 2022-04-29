@@ -3,14 +3,71 @@ from matplotlib.path import Path
 from matplotlib.patches import PathPatch
 from matplotlib.collections import PatchCollection
 
-from shapely.geometry import Polygon
+from shapely.geometry import Polygon, Point
+from shapely.geometry.base import BaseGeometry
 import matplotlib.pyplot as plt
+from farrt.node import Node
 
 from farrt.world import World
 
+def plot_point(ax, point: Point, **kwargs):
+  if isinstance(point, Node):
+    point = point.coord
+  if isinstance(point, BaseGeometry):
+    point = point.centroid
+  if isinstance(point, tuple):
+    point = Point(point)
+  if isinstance(point, Point):
+    ax.plot(point.x, point.y, **kwargs)
+  else:
+    raise TypeError('plot_point() expects a Point, but got a {}'.format(type(point)))
 
-# Plots a Polygon to pyplot `ax`
+def plot_line(ax, start: Point, end: Point, **kwargs):
+  if isinstance(start, Node):
+    start = start.coord
+  if isinstance(end, Node):
+    end = end.coord
+  if isinstance(start, BaseGeometry):
+    start = start.centroid
+  if isinstance(end, BaseGeometry):
+    end = end.centroid
+  if isinstance(start, tuple):
+    start = Point(start)
+  if isinstance(end, tuple):
+    end = Point(end)
+  if isinstance(start, Point) and isinstance(end, Point):
+    ax.plot([start.x, end.x], [start.y, end.y], **kwargs)
+  else:
+    raise TypeError('plot_line() expect two Points, but got a {} and {}'.format(type(start), type(end)))
+
+def plot_points(points: list, ax=None, **kwargs):
+  if ax is None:
+    fig,ax = plt.subplots()
+  else:
+    fig=None
+  if len(points) > 0 and isinstance(points[0], Node):
+    point: Node
+    for point in points:
+      if point.parent is not None:
+        kwargs_without_marker = {k:v for k,v in kwargs.items() if k != 'marker'}
+        if 'edgecolor' in kwargs:
+          kwargs_without_marker['color'] = kwargs_without_marker.pop('edgecolor')
+          # kwargs_without_marker.pop('edgecolor')
+          kwargs.pop('edgecolor')
+        plot_line(ax, point.parent.coord, point.coord, marker='', linestyle='-', linewidth=kwargs_without_marker.pop('linewidth', 2), **kwargs_without_marker)
+  for point in points:
+    pass
+    # plot_point(ax, point, **kwargs)
+  return fig,ax
+
 def plot_polygon(ax, poly, **kwargs):
+  """
+  Plots a Polygon to pyplot `ax`
+  kwargs: facecolor='lightblue', edgecolor='red'
+  """
+  if hasattr(poly, 'is_empty') and poly.is_empty:
+    print('empty polygon')
+    return
   path = Path.make_compound_path(
     Path(np.asarray(poly.exterior.coords)[:, :2]),
     *[Path(np.asarray(ring.coords)[:, :2]) for ring in poly.interiors])
@@ -23,13 +80,19 @@ def plot_polygon(ax, poly, **kwargs):
   return collection
 
 def plot_polygons(polygons: list = None, dims=None, **kwargs):
+  if isinstance(polygons, Polygon):
+    polygons = [polygons]
+  if hasattr(polygons, 'is_empty') and polygons.is_empty:
+    polygons = []
+  if hasattr(polygons, 'geoms'):
+    polygons = polygons.geoms
   if polygons is None:
     polygons = []
-  elif hasattr(polygons, 'is_empty') and polygons.is_empty:
-    polygons = []
-  elif hasattr(polygons, 'geoms'):
-    polygons = polygons.geoms
-  fig,ax = plt.subplots()
+  ax = kwargs.pop('ax', None)
+  if ax is None:
+    fig,ax = plt.subplots()
+  else:
+    fig=None
   for polygon in polygons:
       plot_polygon(ax, polygon, **kwargs)
   if dims is not None:
@@ -42,18 +105,39 @@ def plot_polygons(polygons: list = None, dims=None, **kwargs):
   ax.set_aspect(abs((x_right-x_left)/(y_low-y_high))*ratio)
   return fig,ax
 
-def plot_world(world: World = None, **kwargs):
-  if world is None:
-    world = World()
-  return plot_polygons(world.obstacles.geoms, dims=world.dims, **kwargs)
+def plot_world(world: World, draw_obstacles: bool = True, **kwargs):
+  ax = kwargs.pop('ax', None)
+  if ax is None:
+    fig,ax = plt.subplots()
+  else:
+    fig=None
+  background_color = kwargs.pop('background_color', 'lightblue')
+  border_color = kwargs.pop('border_color', 'red')
+  obstacle_color = kwargs.pop('obstacle_color', 'black')
+  obstacle_edge_color = kwargs.pop('obstacle_edge_color', 'red')
+  plot_polygon(ax, world.getBoundingPoly(), facecolor=background_color, edgecolor=border_color, **kwargs)
+  if draw_obstacles:
+    plot_polygons(world.obstacles.geoms, dims=world.dims, ax=ax, facecolor=obstacle_color, edgecolor=obstacle_edge_color, **kwargs)
+  return fig,ax
 
-
-
-# # Input polygon with two holes
-# # (remember exterior point order is ccw, holes cw else
-# # holes may not appear as holes.)
-# polygon = Polygon(shell=((0,0),(10,0),(10,10),(0,10)),
-#                   holes=(((1,3),(5,3),(5,1),(1,1)),
-#                          ((9,9),(9,8),(8,8),(8,9))))
-
-# fig, ax = plt.subplots()
+def plot_planner(world: World = None, curr_pos: Node = None, goal:Node = None, observations: BaseGeometry = None, rrt_tree:list[Node] = None, planned_path:list[Node] = None, **kwargs):
+  if 'fig_ax' in kwargs:
+    fig,ax = kwargs.pop('fig_ax')
+  else:
+    fig,ax = plt.subplots()
+  if world is not None:
+    plot_world(world, ax=ax, draw_obstacles=True, obstacle_color='black', obstacle_edge_color='red')
+  if observations is not None:
+    if observations.is_empty:
+      print('No observations to plot')
+    plot_polygons(observations, ax=ax, facecolor='green', edgecolor='blue')
+  if rrt_tree is not None:
+    plot_points(rrt_tree, ax=ax, marker=".", markersize=3, markeredgecolor="yellow", markerfacecolor="yellow", edgecolor='yellow', linewidth=1)
+  if planned_path is not None:
+    plot_points(planned_path, ax=ax, marker=".", markersize=5, markeredgecolor="orange", markerfacecolor="orange", edgecolor='orange', linewidth=3)
+  if curr_pos is not None:
+    plot_point(ax, curr_pos, marker=".", markersize=6, markeredgecolor="red", markerfacecolor="red")
+  if goal is not None:
+    plot_point(ax, goal, marker=".", markersize=6, markeredgecolor="green", markerfacecolor="green")
+  fig.set_size_inches(8,8)
+  return fig,ax

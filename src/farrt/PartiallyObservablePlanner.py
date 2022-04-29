@@ -1,10 +1,11 @@
 from abc import ABC, abstractmethod
 from copy import deepcopy
-from typing import Generic, TypeVar
+
 from shapely.geometry.base import BaseGeometry
+from shapely.geometry import Point
 
 from farrt.node import Node
-from farrt.world import World, Coord
+from farrt.world import World
 
 class PartiallyObservablePlanner(ABC):
   def __init__(self, world: World, x_start: Node, x_goal: Node) -> None:
@@ -12,10 +13,9 @@ class PartiallyObservablePlanner(ABC):
     self.x_start = x_start
     self.x_goal = x_goal
     self.curr_pos = deepcopy(x_start)
-    self.detected_edges = BaseGeometry()
 
   @abstractmethod
-  def step(self) -> Coord:
+  def step(self) -> Point:
     pass
 
   @abstractmethod
