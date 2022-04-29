@@ -13,6 +13,10 @@ class Node:
       raise TypeError('Node() expects a Point, but got a {}'.format(type(coord)))
     self.parent = parent
     self.children = []
+    self.in_neighbors = []
+    self.out_neighbors = []
+    self.in_running = []
+    self.out_running = []
 
   def __deepcopy__(self, memo):
     return Node(Point(self.coord.x, self.coord.y), self.parent)
