@@ -53,6 +53,10 @@ class PartiallyObservablePlanner(ABC):
       self.handle_deleted_obstacles(deleted_obstacles)
 
   @abstractmethod
+  def update_plan() -> None:
+    pass
+
+  @abstractmethod
   def handle_new_obstacles(self, new_obstacles: BaseGeometry) -> None:
     """
     called whenever new obstacles are detected at an observation step
@@ -94,6 +98,7 @@ class PartiallyObservablePlanner(ABC):
       next_node = self.step_through_plan()
       self.curr_pos = next_node
       self.observe_world()
+      self.update_plan()
 
       step += 1
 

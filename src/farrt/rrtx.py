@@ -39,6 +39,9 @@ class RRTX(PartiallyObservablePlanner):
     self.radius = math.floor((math.prod(self.world.dims) * math.log(self.n) / self.n) ** (1/2)) # radius of ball for neighbors
 
 
+  def update_plan(self) -> None:
+    self.rewire_neighbors()
+    self.reduce_inconsistency()
 
   def handle_new_obstacles(self, new_obstacles: BaseGeometry) -> None:
     path = [self.curr_pos.coord] + [node.coord for node in self.planned_path]
