@@ -5,13 +5,14 @@ import random
 from shapely.geometry import Point, MultiPolygon, Polygon, CAP_STYLE
 from shapely.geometry.base import BaseGeometry
 
-Coord = Point#TypeVar('Coord', bound=Point)
+from farrt.node import Node
+
 
 #class World(ABC):
 class World():
 
   def __init__(self, dims: List[float] = None, obstacles: BaseGeometry = None) -> None:
-    self.dims = dims or [90,90]
+    self.dims = dims or [100,100]
     self.obstacles: BaseGeometry = obstacles or World.generate_default_obstacles(self.dims)
 
   @classmethod
@@ -24,12 +25,17 @@ class World():
       obstacles = obstacles.union(poly)
     return obstacles.intersection(Polygon([[0,0], [0, dims[1]], [dims[0], dims[1]], [dims[0], 0], [0,0]]))
 
+  def getBoundingPoly(self) -> Polygon:
+    return Polygon([[0,0], [0, self.dims[1]], [self.dims[0], self.dims[1]], [self.dims[0], 0], [0,0]])
+
   #@abstractmethod
-  def reached_goal(position: Coord, goal: Coord) -> bool:
+  def reached_goal(position: Point, goal: Point) -> bool:
     pass
 
   #@abstractmethod
-  def make_observations(self, position: Coord, radius: float) -> BaseGeometry:
+  def make_observations(self, position: Point|Node, radius: float) -> BaseGeometry:
+    if isinstance(position, Node):
+      position = position.coord
     circle = position.buffer(radius)
     obstervation = self.obstacles.intersection(circle)
     if isinstance(obstervation, MultiPolygon):
@@ -38,7 +44,7 @@ class World():
       return MultiPolygon([obstervation])
 
   #@abstractmethod
-  def random_position(self) -> Coord:
+  def random_position(self) -> Point:
     out = Point(*[random.random() * dim for dim in self.dims])
     # print(out)
     return out
