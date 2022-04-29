@@ -15,12 +15,12 @@ class World():
     self.dims = dims or [100,100]
     self.obstacles: BaseGeometry = obstacles or World.generate_default_obstacles(self.dims)
 
-  @classmethod
-  def generate_default_obstacles(cls, dims: List[float], num_obstacles=50) -> BaseGeometry:
+  @staticmethod
+  def generate_default_obstacles(dims: List[float], num_obstacles=50) -> BaseGeometry:
     obstacles = BaseGeometry()
     for i in range(num_obstacles):
       coord = Point(*[random.random() * dim for dim in dims])
-      size = random.randint(2,4)
+      size = 1 + random.random() * 5
       poly = coord.buffer(size, cap_style=CAP_STYLE.square)
       obstacles = obstacles.union(poly)
     return obstacles.intersection(Polygon([[0,0], [0, dims[1]], [dims[0], dims[1]], [dims[0], 0], [0,0]]))
@@ -44,15 +44,9 @@ class World():
       return MultiPolygon([obstervation])
 
   #@abstractmethod
-  def random_position(self) -> Point:
+  def random_position(self, not_blocked=False) -> Point:
     out = Point(*[random.random() * dim for dim in self.dims])
-    # print(out)
+    if not_blocked:
+      while self.obstacles.intersects(out.buffer(3)):
+        out = Point(*[random.random() * dim for dim in self.dims])
     return out
-
-  # #@abstractmethod
-  # def obstacle_detected(self) -> None:
-  #   pass
-
-  # #@abstractmethod
-  # def obstacle_vanished(self) -> None:
-  #   pass
