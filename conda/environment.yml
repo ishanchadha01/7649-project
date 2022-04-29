@@ -1,0 +1,10 @@
+name: farrt-env
+channels:
+    - conda-forge
+    - pytorch
+dependencies:
+    - numpy
+    - shapely
+    - matplotlib
+    - scipy
+    - ipykernel

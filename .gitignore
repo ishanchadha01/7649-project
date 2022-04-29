@@ -3,6 +3,16 @@ build
 ./**/build/**
 ./**/build/**/*
 
+devel
+**/devel
+./**/devel/**
+./**/devel/**/*
+
+install
+**/install
+./**/install/**
+./**/install/**/*
+
 listener
 
 .DS_Store
