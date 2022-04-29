@@ -15,12 +15,9 @@ class PartiallyObservablePlanner(ABC):
     self.curr_pos = deepcopy(x_start)
 
   @abstractmethod
-<<<<<<< HEAD
-=======
   def step(self) -> Point:
     pass
 
   @abstractmethod
->>>>>>> 4ecb18937c8c8f87c085004c0b528e216e694559
   def run(self):
     pass

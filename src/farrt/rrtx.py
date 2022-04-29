@@ -33,6 +33,7 @@ class RRTX(PartiallyObservablePlanner):
     self.planned_path = []
 
     self.detected_obstacles = BaseGeometry()
+    self.intersecting_edges = set()
     self.vision_radius = kwargs.get('vision_radius', 10)
 
     self.thresh = 1
@@ -42,11 +43,13 @@ class RRTX(PartiallyObservablePlanner):
     self.n = 1000
     self.radius = math.floor((math.prod(self.world.dims) * math.log(self.n) / self.n) ** (1/2)) # radius of ball for neighbors
 
-    
-
 
   def observe_world(self) -> None:
     observations = self.world.make_observations(self.curr_pos, self.vision_radius)
+    # deleted_obstacles = self.detected_obstacles - observations
+    # if not deleted_obstacles.is_empty: # obstacles disappeared
+    #   self.removeObstacles(deleted_obstacles)
+
     new_obstacles = observations - self.detected_obstacles
     if not new_obstacles.is_empty: # new obstacles detected
       # self.reduce_inconsistency()
@@ -54,16 +57,24 @@ class RRTX(PartiallyObservablePlanner):
       if len(path) <= 1 or LineString(path).intersects(new_obstacles):
         self.plan()
       pass
-    deleted_obstacles = self.detected_obstacles - observations
-    if not deleted_obstacles.is_empty: # obstacles disappeared
-      # self.propagate_changes()
-      # self.pq.put()
-      pass
+    
     self.detected_obstacles = self.detected_obstacles.union(observations)
+
+
+  def removeObstacles(self, obstacles):
+    for obstacle in obstacles:
+      # remove obstacle from obstacles
+      possible_edges = set()
+      for edge in self.intersecting_edges:
+        if edge.intersects(self.detected_obstacles):
+          possible_edges.add(edge)
+
+
 
   def plan(self):
     self.build_rrt_tree(self.x_goal, self.curr_pos)
     self.planned_path = self.extract_path(self.x_goal)
+
 
   def sample(self, goal_node: Node) -> Node:
     if random.random() < self.eps: # some % chance of returning goal node
@@ -131,23 +142,7 @@ class RRTX(PartiallyObservablePlanner):
   def build_rrt_tree(self, start: Node, goal: Node) -> list[Node]:
     self.rrt_tree.clear()
     self.rrt_tree.append(start)
-<<<<<<< HEAD
     x_new = start
-=======
-    # begin = False
-    # while not begin:
-    #   x_rand = self.sample(goal)
-    #   # print(x_rand.coord)
-    #   x_new = self.steer(start, x_rand) # includes step function
-    #   # print(x_new.coord)
-    #   if self.obstacle_free(x_rand, x_new):
-    #     # print('poop')
-    #     self.rrt_tree.append(x_new)
-    #     x_new.parent = start
-    #     start.children.append(x_new)
-    #     begin = True
-
->>>>>>> 4ecb18937c8c8f87c085004c0b528e216e694559
     i = 0
     while i < self.iters:
       x_rand = self.sample(goal)
@@ -178,11 +173,6 @@ class RRTX(PartiallyObservablePlanner):
     # curr_node = self.curr_pos
     self.observe_world()
     step = 0
-<<<<<<< HEAD
-    while curr_node != self.x_goal:
-      next_node = self.planned_path.pop()
-      self.update_obstacles()
-=======
     if self.gui:
       fig,ax = (None,None)#plt.subplots()
       if os.path.exists(f'rrtx-gifs/{self.run_count}'):
@@ -198,7 +188,6 @@ class RRTX(PartiallyObservablePlanner):
       next_node = self.step()
       self.curr_pos = next_node
       self.observe_world()
->>>>>>> 4ecb18937c8c8f87c085004c0b528e216e694559
 
       print(f'Step: {step} - Distance: {self.curr_pos.dist(self.x_goal)}')
 
@@ -223,33 +212,6 @@ class RRTX(PartiallyObservablePlanner):
       return self.curr_pos
     return self.planned_path.pop()
 
-<<<<<<< HEAD
-
-  def render(self, step):
-    window = tk.Tk()
-
-    # create canvas to plot rrt graph
-    window.rowconfigure([0,1], minsize=50, weight=1)
-    window.columnconfigure([0,1], minsize=50, weight=1)
-    canvas = tk.Canvas(window, bg="white", height=300, width=300)
-    canvas.grid(row=0, column=0)
-    python_green = "#476042"
-    for node in self.rrt_tree:
-      canvas.create_oval(node.coord[0]*2, node.coord[1]*2, node.coord[0]*2, node.coord[1]*2, fill=python_green)
-      if node.parent:
-        canvas.create_line(node.parent.coord[0]*2, node.parent.coord[1]*2, node.coord[0]*2, node.coord[1]*2)
-    for (x0, y0), (x1, y1) in self.world.obstacles:
-      canvas.create_line(x0*2, y0*2, x1*2, y1*2)
-
-    # create buttons at the bottom to step through simulation
-    lbl_value = tk.Label(master=window, text=f"Step: {step}")
-    lbl_value.grid(row=1, column=0)
-    clicked = tk.BooleanVar(value=False)
-    step_btn = tk.Button(master=window, text="Next", command=lambda: clicked.set(True))
-    step_btn.grid(row=1, column=1, sticky="nsew")
-    window.mainloop()
-    #window.wait_variable(clicked)
-=======
   def render(self,fig,ax,step:int,save_file=None):
     # fig.clear()
     fig,ax = plt.subplots()
@@ -261,7 +223,6 @@ class RRTX(PartiallyObservablePlanner):
     plt.close()
 
 
->>>>>>> 4ecb18937c8c8f87c085004c0b528e216e694559
 
 
 if __name__=='__main__':

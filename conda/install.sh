@@ -12,4 +12,4 @@ conda install -c conda-forge mamba
 mamba env create -f "${SCRIPT_DIR}/${ENVIRONMENT_FILE}" \
 && eval "$(conda shell.bash hook)" \
 && conda activate farrt-env \
-&& python -m pip install -e "$SCRIPT_DIR/.."
+&& python3.10 -m pip install -e "$SCRIPT_DIR/.."
