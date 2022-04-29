@@ -4,10 +4,11 @@ import math
 import tkinter as tk
 import numpy as np
 from scipy.spatial import KDTree
-from PartiallyObservablePlanner import PartiallyObservablePlanner
 from queue import PriorityQueue
-from node import Node
-from world import World, Coord
+
+from farrt.PartiallyObservablePlanner import PartiallyObservablePlanner
+from farrt.node import Node
+from farrt.world import World, Coord
 
 
 class RRTX(PartiallyObservablePlanner):
@@ -85,7 +86,7 @@ class RRTX(PartiallyObservablePlanner):
       C, D = edge2
       return ccw(A,C,D) != ccw(B,C,D) and ccw(A,B,C) != ccw(A,B,D)
 
-    for edge in self.world.obstacle_edges:
+    for edge in self.world.obstacles:
       # the path intersects with an obstacle edge, so it is not a valid path
       if lines_intersect(edge, (x1.coord, x2.coord)):
         return False
@@ -162,7 +163,7 @@ class RRTX(PartiallyObservablePlanner):
       canvas.create_oval(node.coord[0]*2, node.coord[1]*2, node.coord[0]*2, node.coord[1]*2, fill=python_green)
       if node.parent:
         canvas.create_line(node.parent.coord[0]*2, node.parent.coord[1]*2, node.coord[0]*2, node.coord[1]*2)
-    for (x0, y0), (x1, y1) in self.world.obstacle_edges:
+    for (x0, y0), (x1, y1) in self.world.obstacles:
       canvas.create_line(x0*2, y0*2, x1*2, y1*2)
 
     # create buttons at the bottom to step through simulation

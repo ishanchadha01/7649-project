@@ -1,9 +1,10 @@
 from math import sqrt
 import random
-from main.PartiallyObservablePlanner import PartiallyObservablePlanner
-from main.world import Coord
-from node import Node
 from typing import Callable, List, Tuple, TypeVar
+
+from farrt.PartiallyObservablePlanner import PartiallyObservablePlanner
+from farrt.world import Coord
+from farrt.node import Node
 
 Tree = List[Node]
 
