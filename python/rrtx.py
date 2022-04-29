@@ -94,19 +94,7 @@ class RRTX(PartiallyObservablePlanner):
 
   def build_rrt_tree(self, start, goal):
     self.rrt_tree.append(start)
-    begin = False
-    while not begin:
-      x_rand = self.sample(goal)
-      print(x_rand.coord)
-      x_new = self.steer(start, x_rand) # includes step function
-      print(x_new.coord)
-      if self.obstacle_free(x_rand, x_new):
-        print('poop')
-        self.rrt_tree.append(x_new)
-        x_new.parent = start
-        start.children.append(x_new)
-        begin = True
-
+    x_new = start
     i = 0
     while self.dist(x_new, goal) >= self.thresh:
       x_rand = self.sample(goal)
