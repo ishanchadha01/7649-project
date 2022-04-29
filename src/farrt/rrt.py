@@ -1,3 +1,4 @@
+import argparse
 import os
 from copy import deepcopy
 import random
@@ -19,7 +20,7 @@ from farrt.world import World
 
 import imageio
 
-class RRTX(PartiallyObservablePlanner):
+class RRT(PartiallyObservablePlanner):
 
   def __init__(self, run_count, *args, **kwargs) -> None:
     self.gui = kwargs.pop('gui', True)
@@ -46,13 +47,15 @@ class RRTX(PartiallyObservablePlanner):
 
   def observe_world(self) -> None:
     observations = self.world.make_observations(self.curr_pos, self.vision_radius)
-    if not (observations - self.detected_obstacles).is_empty: # new obstacles detected
+    new_obstacles = observations - self.detected_obstacles
+    if not new_obstacles.is_empty: # new obstacles detected
       # self.reduce_inconsistency()
       path = [self.curr_pos.coord] + [node.coord for node in self.planned_path]
-      if len(path) <= 1 or LineString(path).intersects(observations):
+      if len(path) <= 1 or LineString(path).intersects(new_obstacles):
         self.plan()
       pass
-    if not (self.detected_obstacles - observations).is_empty: # obstacles disappeared
+    deleted_obstacles = self.detected_obstacles - observations
+    if not deleted_obstacles.is_empty: # obstacles disappeared
       # self.propagate_changes()
       # self.pq.put()
       pass
@@ -154,12 +157,13 @@ class RRTX(PartiallyObservablePlanner):
     step = 0
     if self.gui:
       fig,ax = (None,None)#plt.subplots()
-      shutil.rmtree(f'rrtx-gifs/{self.run_count}')
-      os.mkdir(f'rrtx-gifs/{self.run_count}')
-    filenames= []
+      if os.path.exists(f'rrt-gifs/{self.run_count}'):
+        shutil.rmtree(f'rrt-gifs/{self.run_count}')
+      os.mkdir(f'rrt-gifs/{self.run_count}')
+    filenames = []
     while not self.curr_pos.same_as(self.x_goal):
       if self.gui:
-        name = f'rrtx-gifs/{self.run_count}/{step}.png'
+        name = f'rrt-gifs/{self.run_count}/{step}.png'
         self.render(fig,ax,step,save_file=name)
         filenames.append(name)
 
@@ -172,18 +176,18 @@ class RRTX(PartiallyObservablePlanner):
       step += 1
 
     if self.gui:
-      name = f'rrtx-gifs/{self.run_count}/{step}.png'
+      name = f'rrt-gifs/{self.run_count}/{step}.png'
       self.render(fig,ax,step,save_file=name)
       for i in range(10):
         filenames.append(name)
       
-      with imageio.get_writer(f'rrtx-gifs/run-{self.run_count}.gif', mode='I') as writer:
+      with imageio.get_writer(f'rrt-gifs/run-{self.run_count}.gif', mode='I') as writer:
         for filename in filenames:
             image = imageio.imread(filename)
             writer.append_data(image)
       # for filename in set(filenames):
       #   os.remove(filename)
-      shutil.rmtree(f'rrtx-gifs/{self.run_count}')
+      shutil.rmtree(f'rrt-gifs/{self.run_count}')
 
   def step(self) -> Node:
     if len(self.planned_path) == 0:
@@ -204,6 +208,12 @@ class RRTX(PartiallyObservablePlanner):
 
 
 if __name__=='__main__':
+  # extract run args run_count
+  parser = argparse.ArgumentParser()
+  parser.add_argument('-rc', type=int, required=True)
+  args = parser.parse_args()
+  run_count = args.rc
+  
   world = World()
-  rrtx = RRTX(world=world, x_start=Node((5,5)), x_goal=Node((85,85)), gui=True, run_count=3)
-  rrtx.run()
+  rrt = RRT(world=world, x_start=Node((5,5)), x_goal=Node((85,85)), gui=True, run_count=run_count)
+  rrt.run()
