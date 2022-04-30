@@ -27,7 +27,6 @@ class RRT(PartiallyObservablePlanner):
     self.iters = kwargs.get('iters', 1000)
     self.eps = kwargs.get('eps', .01)
 
-    self.detected_obstacles = BaseGeometry()
     self.max_step_length = kwargs.get('max_step_length', self.vision_radius / 2)
 
     self.rrt_tree: list[Node] = [] # tree to calculate path to goal
@@ -35,6 +34,8 @@ class RRT(PartiallyObservablePlanner):
 
 
   def handle_new_obstacles(self, new_obstacles: BaseGeometry) -> None:
+    if new_obstacles.is_empty:
+      return
     path = [self.curr_pos.coord] + [node.coord for node in self.planned_path]
     if len(path) <= 1 or LineString(path).intersects(new_obstacles):
       print('Path is inconsistent with new obstacles')
@@ -119,12 +120,6 @@ class RRT(PartiallyObservablePlanner):
 
 
 if __name__=='__main__':
-  # extract run args run_count
-  parser = argparse.ArgumentParser()
-  parser.add_argument('-rc', type=int, dest='run_count')
-  args = parser.parse_args()
-  filtered_args = {k: v for k, v in vars(args).items() if v is not None}
-
   world = World()
-  rrt = RRT(world=world, x_start=Node(world.random_position(not_blocked=True)), x_goal=Node(world.random_position(not_blocked=True)), gui=True, **filtered_args)
+  rrt = RRT(world=world, x_start=Node(world.random_position(not_blocked=True)), x_goal=Node(world.random_position(not_blocked=True)), gui=True)
   rrt.run()
