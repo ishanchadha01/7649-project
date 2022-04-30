@@ -84,13 +84,20 @@ class FARRT(PartiallyObservablePlanner):
     self.render(visualize=True)
 
   def replan(self, **kwargs):
+    """
+    Replan the path from the current position to the goal.
+    1. Sever nodes within obstacles
+    2. Apply potential field update to remaining points
+    3. Rewire free points into tree
+    4. Extract a plan from the tree
+    """
     print('Planning...')
     if self.gui:
       self.render(draw_world_obstacles=False, save_frame=True, **kwargs)
 
-    self.planned_path = []
-    final_pt,final_cost = self.build_farrt_tree(root=self.x_goal_pt, goal_pt=self.curr_pos.coord, goal_threshold=0)
-    self.planned_path = self.extract_path(endpoint=final_pt,root=self.x_goal_pt)
+    severed_pts, closest_parents, free_pts = self.do_tree_severing()
+    
+
 
     print('Planning complete')
     # if self.gui:
@@ -276,6 +283,13 @@ class FARRT(PartiallyObservablePlanner):
       parent = self.curr_pos if i == 0 else node_path[i-1]
       node_path.append(Node(pt,parent))
     return node_path
+
+  def do_tree_severing(self):
+    conflicting_pts = as_multipoint(self.farrt_tree.intersection(self.detected_obstacles))
+    closest_parents = set()
+    for pt in conflicting_pts.geoms:
+      closest_parents.add(self.get_parent(pt))
+    
 
   def as_vertex(self, pt: Point) -> vertex_t:
     return pt.coords[0]
