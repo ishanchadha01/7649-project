@@ -17,6 +17,7 @@ class Node:
     self.out_neighbors = []
     self.in_running = []
     self.out_running = []
+    self.lmc = float('inf')
 
   def __deepcopy__(self, memo):
     return Node(Point(self.coord.x, self.coord.y), self.parent)

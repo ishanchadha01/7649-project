@@ -12,6 +12,7 @@ from matplotlib import pyplot as plt
 
 from shapely.geometry.base import BaseGeometry
 from shapely.geometry import Point, LineString
+from pyproj import Geod
 
 from farrt.PartiallyObservablePlanner import PartiallyObservablePlanner
 from farrt.node import Node
@@ -36,12 +37,29 @@ class RRTX(PartiallyObservablePlanner):
     self.goal_reached_thresh = 1
     self.pq = PriorityQueue()
     self.n = 1000
-    self.radius = math.floor((math.prod(self.world.dims) * math.log(self.n) / self.n) ** (1/2)) # radius of ball for neighbors
+    self.neighbor_radius = math.floor((math.prod(self.world.dims) * math.log(self.n) / self.n) ** (1/2)) # radius of ball for neighbors
 
 
   def update_plan(self) -> None:
     self.rewire_neighbors()
     self.reduce_inconsistency()
+
+  def trajectory_dist(self):
+    geod = Geod(ellps="WGS84")
+    traj = LineString(self.planned_path)
+    return geod.geometry_length(traj)
+
+  def rewire_neighbors(self) -> None:
+    # rewires in neighbors if doing so results in better cost-to-goal
+    self.cull_neighbors()
+    for neighbor in self.curr_pos.in_neighbors:
+      if self.curr_pos.lmc > self.curr_pos.dist(neighbor.coord) + neighbor.lmc:
+        pass
+
+
+  def cull_neighbors(self) -> None:
+    # update running set of neighbors for curr pos
+    pass
 
   def handle_new_obstacles(self, new_obstacles: BaseGeometry) -> None:
     path = [self.curr_pos.coord] + [node.coord for node in self.planned_path]
