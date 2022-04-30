@@ -18,7 +18,7 @@ from farrt.PartiallyObservablePlanner import PartiallyObservablePlanner
 from farrt.node import Node
 from farrt.plot import plot_polygons, plot_planner
 from farrt.world import World
-from farrt.utils import as_multipoint, multipoint_without, shapely_edge
+from farrt.utils import as_multipoint, multipoint_without, pt2tuple, shapely_edge
 
 import imageio
 
@@ -37,94 +37,154 @@ class RRTStar(PartiallyObservablePlanner):
 
     self.obstacle_avoidance_radius = kwargs.get('obstacle_avoidance_radius', self.steer_distance * 2/3)
 
+    # get shapely Point version of start/goal
     self.x_start_pt = self.x_start.coord
     self.x_goal_pt = self.x_goal.coord
 
-    self.rrt_tree = MultiPoint()
+    self.rrt_tree: MultiPoint = MultiPoint()
     self.rrt_vertices: set[vertex_t] = set()
     self.rrt_edges: set[edge_t] = set()
     self.parent_map: dict[vertex_t, vertex_t] = {}
     self.cost_to_reach: dict[vertex_t, float] = {}
+
+    self.free_points: MultiPoint = MultiPoint()
 
     self.goal_reached_thresh = 1
     self.built_tree = False
 
 
   def handle_new_obstacles(self, new_obstacles: BaseGeometry) -> None:
-    if not self.built_tree:
+    if not self.built_tree: # build the tree on first observations
       self.do_first_plan()
       return
-    if new_obstacles.is_empty:
+    if new_obstacles.is_empty: # ignore step if no new obstacles discovered
       return
+    if not len(self.planned_path): # ignore step if no path planned (may be an error case)
+      print('No path planned!')
+      return
+    # if we have a path, check if we need to replan
+
+    # get the full remaining path including current position
     path = [self.curr_pos.coord] + [node.coord for node in self.planned_path]
-    if len(path) <= 1 or LineString(path).intersects(new_obstacles):
+    path_line = LineString(path)
+
+    # check if the remaining path to goal intersects with the new obstacles
+    if path_line.intersects(new_obstacles):
       print('Path is inconsistent with new obstacles')
-      intersections = None
-      if len(path) > 1:
-        # print(LineString(path))
-        intersections = LineString(path).intersection(new_obstacles)
-        # print(intersections)
-        # print(new_obstacles)
+      # print(path_line)
+      intersections = path_line.intersection(new_obstacles)
+      # print(intersections)
+      # print(new_obstacles)
       self.replan(draw_intersections=intersections)
 
   def handle_deleted_obstacles(self, deleted_obstacles: BaseGeometry) -> None:
       return super().handle_deleted_obstacles(deleted_obstacles)
 
   def update_plan(self) -> None:
-      return super().update_plan()
+    """
+    RRT* does not have any default update process after each step.
+    """
+    return super().update_plan()
 
   def do_first_plan(self) -> None:
-    print(f'Do first rrt plan! {self.x_start_pt.coords[0]} -> {self.x_goal_pt.coords[0]}')
+    """
+    Build the RRT tree on the first step.
+    Extract a plan from the tree.
+    """
+    # empty out the current planned path (should already be empty)
     self.planned_path = []
+    print(f'Do first rrt plan! {pt2tuple(self.x_start_pt)} -> {pt2tuple(self.x_goal_pt)}')
+
+    # build the tree from goal to start
     final_pt,final_cost = self.build_rrt_tree(root=self.x_goal_pt, goal_pt=self.curr_pos.coord, goal_threshold=0)
     self.built_tree = True
     print(f'First plan complete. Ends at {final_pt} with cost {final_cost}')
-    self.planned_path = self.extract_path(endpoint=final_pt,root=self.x_goal_pt)
+
+    # extract a plan from the tree and reverse it (to go from goal to start)
+    self.planned_path = self.extract_path(endpoint=final_pt,root=self.x_goal_pt,reverse=True)
     print(f'Path: {len(self.planned_path)}')
+
+    # display the initial plan regardless of gui settings
     self.render(visualize=True)
 
   def replan(self, **kwargs):
+    """
+    Replan the path from the current position to the goal.
+    1. Rerun RRT* from current position to goal
+    2. Extract a plan from the tree
+    """
     print('Planning...')
     if self.gui:
       self.render(draw_world_obstacles=False, save_frame=True, **kwargs)
 
     self.planned_path = []
     final_pt,final_cost = self.build_rrt_tree(root=self.x_goal_pt, goal_pt=self.curr_pos.coord, goal_threshold=0)
-    self.planned_path = self.extract_path(endpoint=final_pt,root=self.x_goal_pt)
+    self.planned_path = self.extract_path(endpoint=final_pt,root=self.x_goal_pt,reverse=True)
 
     print('Planning complete')
     # if self.gui:
     #   self.render()
 
   def sample_free(self, goal_pt: Point, buffer_radius:float = None) -> Point:
+    """
+    Sample a free point in the world
+    Return the goal with some low probability
+    Ensure the new point is further than the buffer radius from existing obstacles
+    """
     if random.random() < self.eps: # some % chance of returning goal node
       return goal_pt
+    
+    # use default buffer for obstacle avoidance
     if buffer_radius is None:
       buffer_radius = self.obstacle_avoidance_radius
+    
+    # sample a random point from the world
     rand_pos = self.world.random_position()
+
+    # ensure that sampled point is not too close to detected obstacles
     while self.detected_obstacles.intersects(rand_pos.buffer(buffer_radius)):
       rand_pos = self.world.random_position()
     return rand_pos
 
   def find_nearest(self, x_rand: Point) -> Point:
+    """
+    Find the nearest point in the tree to the random point
+    """
     nearest_geoms = nearest_points(multipoint_without(self.rrt_tree, x_rand), x_rand)
     nearest_pt = nearest_geoms[0]
     return nearest_pt
 
   def steer(self, x_nearest: Point, x_rand: Point) -> Point:
+    """
+    Steer from the nearest point to the random point
+    Limit the step to the steer distance of the planner
+    """
     dist = x_nearest.distance(x_rand)
-    if dist == 0:
+    if dist == 0: # if the points are the same, just return the sampled point
       return x_rand
+    
+    # factor is max value = 1 (allow steps shorter than steer_distance if sampled point is very close to nearest)
     factor = min(1, self.steer_distance / dist)
+
+    # interpolate along the line between the nearest and sampled points
     newCoord = shapely_edge(x_nearest,x_rand).interpolate(factor, normalized=True)
     return newCoord
 
   def edge_obstacle_free(self, x_nearest: Point, x_new: Point) -> bool:
+    """
+    Check if the edge between the nearest and new points is free of obstacles
+    """
     return not self.detected_obstacles.intersects(shapely_edge(x_nearest,x_new))
 
   def find_nearby_pts(self, x_new: Point) -> MultiPoint:
-
+    """
+    Find all points in the tree within some radius of the new point
+    Used for finding shortest paths and rewiring
+    """
     def find_ball_radius():
+      """
+      Determine the radius of the ball to search for nearby points
+      """
       unit_volume = math.pi
       num_vertices = len(self.rrt_vertices)
       dimensions = len(self.world.dims)
@@ -155,19 +215,25 @@ class RRTStar(PartiallyObservablePlanner):
     return min_point,min_cost
 
   def add_start_vertex(self, x_start: Point) -> None:
+    """
+    Add the start vertex to the tree (no parents, 0 cost)
+    """
     self.rrt_tree = self.rrt_tree.union(x_start)
 
-    vtx = self.as_vertex(x_start)
+    vtx = pt2tuple(x_start)
 
     self.rrt_vertices.add(vtx)
     
     self.set_cost_to_reach(x_start, 0)
 
-  def add_vertex(self, pt: Point, parent: Point, cost: float) -> None:
+  def add_vertex(self, /, pt: Point, parent: Point, cost: float) -> None:
+    """
+    Add a vertex to the tree, add edge from parent to new vertex, set cost to reach
+    """
     self.rrt_tree = self.rrt_tree.union(pt)
 
-    vtx = self.as_vertex(pt)
-    parent_vtx = self.as_vertex(parent)
+    vtx = pt2tuple(pt)
+    parent_vtx = pt2tuple(parent)
 
     self.rrt_vertices.add(vtx)
     self.rrt_edges.add((parent_vtx,vtx))
@@ -176,11 +242,15 @@ class RRTStar(PartiallyObservablePlanner):
     self.set_cost_to_reach(pt, cost)
 
   def reassign_parent(self, pt: Point, parent: Point, cost: float) -> None:
+    """
+    Reassign the parent of a vertex to a new parent, update cost to reach
+    Remove old edges from the rpevious parent if present
+    """
     prev_parent = self.get_parent(pt)
 
-    vtx = self.as_vertex(pt)
-    old_parent_vtx = self.as_vertex(prev_parent)
-    new_parent_vtx = self.as_vertex(parent)
+    vtx = pt2tuple(pt)
+    old_parent_vtx = pt2tuple(prev_parent)
+    new_parent_vtx = pt2tuple(parent)
 
     self.rrt_edges.discard((old_parent_vtx,vtx))
     self.rrt_edges.discard((vtx,old_parent_vtx))
@@ -202,10 +272,15 @@ class RRTStar(PartiallyObservablePlanner):
             self.reassign_parent(pt=x_nearby, parent=x_new, cost=cost_with_new)
 
   def reached_goal(self, x_new: Point, *, goal: Point = None, threshold:float = None) -> bool:
-    if goal is None:
+    """
+    Check if the new point is close enough to the goal to be considered reached
+    """
+    if goal is None: # default to the actual goal of the planner
       goal = self.x_goal_pt
     if threshold is None:
       threshold = self.goal_reached_thresh
+    
+    # check that the distance is below the threshold
     return x_new.distance(goal) < self.goal_reached_thresh
 
   def build_rrt_tree(self, *, root: Point, goal_pt: Point, goal_threshold:float = None) -> None:
@@ -214,14 +289,18 @@ class RRTStar(PartiallyObservablePlanner):
     """
     if goal_threshold is None:
       goal_threshold = self.goal_reached_thresh
+    
+    # empty out the tree and vertices
     self.rrt_tree = MultiPoint()
     self.rrt_vertices.clear()
     self.rrt_edges.clear()
-    self.add_start_vertex(root)#self.x_start_pt
+    # add root point to tree
+    self.add_start_vertex(root)
 
     final_pt = None
     final_pt_cost = float('inf')
 
+    # iterate until max iterations is reached or goal is reached
     i = 0
     while i < self.iters or final_pt is None:
       if self.display_every_n >= 1 and i % (self.display_every_n*2) == 0:
@@ -229,9 +308,12 @@ class RRTStar(PartiallyObservablePlanner):
         if i > 1000 and i % 1000 == 0:
           self.render(visualize=True)
 
+      # sample a node, find the nearest existing node, and steer from nearest to sampled
       x_rand = self.sample_free(goal_pt, buffer_radius=self.obstacle_avoidance_radius if i < self.iters/2 else 0)
       x_nearest = self.find_nearest(x_rand)
       x_new = self.steer(x_nearest, x_rand)
+
+      # if there is an obstacle free path from the nearest node to the new node, analyze neighbors and add to tree
       if self.edge_obstacle_free(x_nearest, x_new):
         # find nearby points to the new point
         nearby_points = self.find_nearby_pts(x_new)
@@ -245,6 +327,7 @@ class RRTStar(PartiallyObservablePlanner):
         # Main difference between RRT and RRT*, modify the points in the nearest set to optimise local path costs.
         self.do_rewiring(nearby_points, x_min, x_new)
 
+        # check if we've reached the goal of the tree building
         if self.reached_goal(x_new, goal=goal_pt, threshold=goal_threshold):
           if self.built_tree: # subsequent runs should just terminate once goal is reached
             final_pt = x_new
@@ -256,41 +339,46 @@ class RRTStar(PartiallyObservablePlanner):
       i += 1
     return final_pt,final_pt_cost
 
-  def extract_path(self, *, endpoint: Point, root: Point) -> list[Node]:
+  def extract_path(self, *, endpoint: Point, root: Point, reverse:bool = True) -> list[Node]:
+    """
+    Extracts the path from the root of rrt tree to the endpoint
+    Done by starting from endpoint in tree and iterating over parents until root is reached
+    """
     curr = endpoint
     path: list[Point] = []
     while curr != root:
-      # i = len(path)
-      # if self.display_every_n >= 1 and i % self.display_every_n == 0:
-      #   print(f"path point {i}: {curr.coords[0]}")
       if curr is None:
         print("ERROR: curr is None!", list(map(str,path)))
         self.render(visualize=True)
         break
-      curr = self.get_parent(curr)
-      path.append(curr)
-    # path.append(self.curr_pos.coord)
-    # path.reverse() # curr pos first
+      if reverse: # get parent before adding (such that final path will include root but not endpoint)
+        curr = self.get_parent(curr)
+        path.append(curr)
+      else: # add point before getting parent (such that final path will include endpoint but not root)
+        path.append(curr)
+        curr = self.get_parent(curr)
+        
+    if not reverse: # invert condition because path is already reversed since iterating backwards via parents
+      path.reverse() # curr pos first
+    
+    # convert to nodes with parent relationships
     node_path = []
     for i,pt in enumerate(path):
       parent = self.curr_pos if i == 0 else node_path[i-1]
       node_path.append(Node(pt,parent))
     return node_path
 
-  def as_vertex(self, pt: Point) -> vertex_t:
-    return pt.coords[0]
-
   def get_parent(self, point: Point) -> Point:
-    return Point(self.parent_map[point.coords[0]])
+    return Point(self.parent_map[pt2tuple(point)])
 
   def set_parent(self, point: Point, parent: Point) -> None:
-    self.parent_map[point.coords[0]] = parent.coords[0]
+    self.parent_map[pt2tuple(point)] = pt2tuple(parent)
 
   def get_cost_to_reach(self, point: Point) -> float:
-    return self.cost_to_reach[point.coords[0]]
+    return self.cost_to_reach[pt2tuple(point)]
 
   def set_cost_to_reach(self, point: Point, cost: float) -> None:
-    self.cost_to_reach[point.coords[0]] = cost
+    self.cost_to_reach[pt2tuple(point)] = cost
 
   def get_edge_cost(self, point1: Point, point2: Point) -> float:
     return point1.distance(point2)
