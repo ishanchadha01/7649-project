@@ -15,7 +15,7 @@ from farrt.world import World
 class PartiallyObservablePlanner(ABC):
   def __init__(self, world: World, x_start: Node, x_goal: Node, **kwargs) -> None:
     self.gui = kwargs.pop('gui', True)
-    self.outdir = kwargs.pop('outdir', f'{self.__class__.__name__}-gifs')
+    self.outdir = kwargs.pop('outdir', f'{self.__class__.__name__.lower()}-gifs')
     self.run_count = kwargs.pop('run_count', PartiallyObservablePlanner.default_run_count(self.outdir))
     self.tmp_img_dir = os.path.join(self.outdir, f'run-{self.run_count}-tmp')
     self.gif_output_path = os.path.join(self.outdir, f'run-{self.run_count}.gif')
