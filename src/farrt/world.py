@@ -4,6 +4,7 @@ import random
 from shapely.geometry import Point, MultiPolygon, Polygon, CAP_STYLE
 
 from farrt.node import Node
+from farrt.utils import as_multipolygon, as_point
 
 
 #class World(ABC):
@@ -17,7 +18,7 @@ class World():
     obstacles = MultiPolygon()
     for i in range(num_obstacles):
       coord = Point(*[random.random() * dim for dim in dims])
-      size = 1 + random.random() * 5
+      size = 1 + random.random() * 8
       poly = coord.buffer(size, cap_style=CAP_STYLE.square)
       obstacles = obstacles.union(poly)
     return obstacles.intersection(Polygon([[0,0], [0, dims[1]], [dims[0], dims[1]], [dims[0], 0], [0,0]]))
@@ -30,14 +31,10 @@ class World():
 
   #@abstractmethod
   def make_observations(self, position: Point|Node, radius: float) -> MultiPolygon:
-    if isinstance(position, Node):
-      position = position.coord
+    position = as_point(position)
     circle = position.buffer(radius)
     obstervation = self.obstacles.intersection(circle)
-    if isinstance(obstervation, MultiPolygon):
-      return obstervation
-    elif isinstance(obstervation, Polygon):
-      return MultiPolygon([obstervation])
+    return as_multipolygon(obstervation)
 
   #@abstractmethod
   def random_position(self, not_blocked=False) -> Point:

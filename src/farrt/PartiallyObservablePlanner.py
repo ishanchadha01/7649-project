@@ -19,7 +19,7 @@ class PartiallyObservablePlanner(ABC):
     self.run_count = kwargs.pop('run_count', PartiallyObservablePlanner.default_run_count(self.outdir))
     self.tmp_img_dir = os.path.join(self.outdir, f'run-{self.run_count}-tmp')
     self.gif_output_path = os.path.join(self.outdir, f'run-{self.run_count}.gif')
-    self.display_every_n = kwargs.pop('display_every_n', -1)
+    self.display_every_n = kwargs.pop('display_every_n', 100)
 
     self.world = world
     self.x_start = x_start
@@ -28,6 +28,8 @@ class PartiallyObservablePlanner(ABC):
 
     self.vision_radius = kwargs.get('vision_radius', 10)
     self.planned_path: list[Node] = []
+
+    self.position_history: list[Node] = [Node(coord=self.x_start.coord, parent=None)]
 
     # make sure kwargs is empty
     assert not kwargs, 'Unexpected keyword arguments: {}'.format(kwargs)
@@ -47,10 +49,10 @@ class PartiallyObservablePlanner(ABC):
     new_obstacles = observations - self.detected_obstacles
     deleted_obstacles = self.detected_obstacles - observations
     self.detected_obstacles = self.detected_obstacles.union(observations)
-    if not new_obstacles.is_empty: # new obstacles detected
-      self.handle_new_obstacles(new_obstacles)
-    if not deleted_obstacles.is_empty: # obstacles disappeared
-      self.handle_deleted_obstacles(deleted_obstacles)
+    # if not new_obstacles.is_empty: # new obstacles detected
+    self.handle_new_obstacles(new_obstacles)
+    # if not deleted_obstacles.is_empty: # obstacles disappeared
+    self.handle_deleted_obstacles(deleted_obstacles)
 
   @abstractmethod
   def update_plan(self) -> None:
@@ -85,19 +87,28 @@ class PartiallyObservablePlanner(ABC):
         shutil.rmtree(self.tmp_img_dir)
       os.makedirs(self.tmp_img_dir)
       self.render(save_step=0) # render out initial state
+    else:
+      self.render(visualize=True)
     
     # make initial observation
     self.observe_world()
     step = 1
-    while not self.curr_pos.same_as(self.x_goal):
+    while True:
       # render out the planner at the start of each step
-      print(f'Step: {step} - Distance: {self.curr_pos.dist(self.x_goal)}')
+      print(f'Step: {step} - Location: {self.curr_pos.coord.coords[0]} - Distance: {self.curr_pos.dist(self.x_goal)}')
       if self.gui:
         self.render(save_step=step)
 
       # follow the planner's current plan and make new observations
       next_node = self.step_through_plan()
       self.curr_pos = next_node
+      if not self.curr_pos.same_as(self.position_history[-1]):
+        self.position_history.append(Node(coord=self.curr_pos.coord, parent=self.position_history[-1]))
+
+      if self.curr_pos.same_as(self.x_goal):
+        print('Goal reached!')
+        break
+
       self.observe_world()
       self.update_plan()
 
@@ -132,7 +143,7 @@ class PartiallyObservablePlanner(ABC):
     post_render = kwargs.pop('post_render', None)
 
     # render the planner state
-    plot_planner(fig_ax=(fig,ax), world=self.world, observations=self.detected_obstacles, curr_pos=self.curr_pos, goal=self.x_goal, planned_path=self.planned_path, **self.get_render_kwargs(), **kwargs)
+    plot_planner(fig_ax=(fig,ax), world=self.world, observations=self.detected_obstacles, curr_pos=self.curr_pos, goal=self.x_goal, position_history=self.position_history, planned_path=self.planned_path, **self.get_render_kwargs(), **kwargs)
     # call postprocessing on the plt image if provided
     if post_render is not None:
       fig,ax = post_render(fig_ax=(fig,ax))
@@ -153,7 +164,7 @@ class PartiallyObservablePlanner(ABC):
         # save the image
         plt.savefig(self.tmp_img_path(last_step, extra_save_count))
     # if visualize or not saving or displaying the nth step
-    if visualize or (save_step is None and not save_frame) or (self.display_every_n >= 1 and (save_step % self.display_every_n == 0)):
+    if visualize or (save_step is None and not save_frame) or (self.display_every_n >= 1 and save_step is not None and (save_step % self.display_every_n == 0)):
       plt.show()
     plt.close()
 
