@@ -259,7 +259,7 @@ class RRTStar(PartiallyObservablePlanner):
     self.set_parent(pt, parent)
     self.set_cost_to_reach(pt, cost)
 
-  def do_rewiring(self, nearby_pts: MultiPoint, x_min: Point, x_new: Point) -> None:
+  def do_rrtstar_rewiring(self, nearby_pts: MultiPoint, x_min: Point, x_new: Point) -> None:
     """
     Rewire the edges of the tree to connect x_new first if it is closer than the current parent
     Discards edges from points in nearby_pts if they can be improved by going thorugh x_new
@@ -325,7 +325,7 @@ class RRTStar(PartiallyObservablePlanner):
         self.add_vertex(pt=x_new,parent=x_min,cost=min_cost)
 
         # Main difference between RRT and RRT*, modify the points in the nearest set to optimise local path costs.
-        self.do_rewiring(nearby_points, x_min, x_new)
+        self.do_rrtstar_rewiring(nearby_points, x_min, x_new)
 
         # check if we've reached the goal of the tree building
         if self.reached_goal(x_new, goal=goal_pt, threshold=goal_threshold):
