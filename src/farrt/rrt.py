@@ -35,6 +35,8 @@ class RRT(PartiallyObservablePlanner):
 
 
   def handle_new_obstacles(self, new_obstacles: BaseGeometry) -> None:
+    if new_obstacles.is_empty:
+      return
     path = [self.curr_pos.coord] + [node.coord for node in self.planned_path]
     if len(path) <= 1 or LineString(path).intersects(new_obstacles):
       print('Path is inconsistent with new obstacles')

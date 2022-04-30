@@ -18,7 +18,7 @@ from farrt.PartiallyObservablePlanner import PartiallyObservablePlanner
 from farrt.node import Node
 from farrt.plot import plot_polygons, plot_planner
 from farrt.world import World
-from farrt.utils import multipoint_without, shapely_edge
+from farrt.utils import as_multipoint, multipoint_without, shapely_edge
 
 import imageio
 
@@ -29,12 +29,13 @@ class FARRT(PartiallyObservablePlanner):
 
   def __init__(self, *args, **kwargs) -> None:
     super().__init__(*args, **kwargs)
-    self.iters = kwargs.get('iters', 1000)
+    self.iters = kwargs.get('iters', 2000)
     self.eps = kwargs.get('eps', .01)
 
     self.detected_obstacles = BaseGeometry()
     self.steer_distance = kwargs.get('max_step_length', self.vision_radius / 3)
 
+    self.obstacle_avoidance_radius = kwargs.get('obstacle_avoidance_radius', self.steer_distance * 2/3)
 
     self.x_start_pt = self.x_start.coord
     self.x_goal_pt = self.x_goal.coord
@@ -53,6 +54,8 @@ class FARRT(PartiallyObservablePlanner):
     if not self.built_tree:
       self.do_first_plan()
       return
+    if new_obstacles.is_empty:
+      return
     path = [self.curr_pos.coord] + [node.coord for node in self.planned_path]
     if len(path) <= 1 or LineString(path).intersects(new_obstacles):
       print('Path is inconsistent with new obstacles')
@@ -62,7 +65,7 @@ class FARRT(PartiallyObservablePlanner):
         intersections = LineString(path).intersection(new_obstacles)
         # print(intersections)
         # print(new_obstacles)
-      self.plan(draw_intersections=intersections)
+      self.replan(draw_intersections=intersections)
 
   def handle_deleted_obstacles(self, deleted_obstacles: BaseGeometry) -> None:
       return super().handle_deleted_obstacles(deleted_obstacles)
@@ -71,28 +74,40 @@ class FARRT(PartiallyObservablePlanner):
       return super().update_plan()
 
   def do_first_plan(self) -> None:
-    final_pt,final_cost = self.build_farrt_tree()
+    print(f'Do first farrt plan! {self.x_start_pt.coords[0]} -> {self.x_goal_pt.coords[0]}')
+    self.planned_path = []
+    final_pt,final_cost = self.build_farrt_tree(root=self.x_goal_pt, goal_pt=self.curr_pos.coord, goal_threshold=0)
     self.built_tree = True
-    self.planned_path = self.extract_path(final_pt)
+    print(f'First plan complete. Ends at {final_pt} with cost {final_cost}')
+    self.planned_path = self.extract_path(endpoint=final_pt,root=self.x_goal_pt)
+    print(f'Path: {len(self.planned_path)}')
+    self.render(visualize=True)
 
-  def plan(self, **kwargs):
+  def replan(self, **kwargs):
     print('Planning...')
-    self.render(draw_world_obstacles=False, save_frame=True, **kwargs)
-    self.build_farrt_tree(self.x_goal, self.curr_pos)
-    self.planned_path = self.extract_path(self.x_goal)
-    print('Planning complete')
-    # self.render()
+    if self.gui:
+      self.render(draw_world_obstacles=False, save_frame=True, **kwargs)
 
-  def sample_free(self, goal_pt: Point) -> Point:
+    self.planned_path = []
+    final_pt,final_cost = self.build_farrt_tree(root=self.x_goal_pt, goal_pt=self.curr_pos.coord, goal_threshold=0)
+    self.planned_path = self.extract_path(endpoint=final_pt,root=self.x_goal_pt)
+
+    print('Planning complete')
+    # if self.gui:
+    #   self.render()
+
+  def sample_free(self, goal_pt: Point, buffer_radius:float = None) -> Point:
     if random.random() < self.eps: # some % chance of returning goal node
       return goal_pt
+    if buffer_radius is None:
+      buffer_radius = self.obstacle_avoidance_radius
     rand_pos = self.world.random_position()
-    while rand_pos is None or self.detected_obstacles.contains(rand_pos):
+    while self.detected_obstacles.intersects(rand_pos.buffer(buffer_radius)):
       rand_pos = self.world.random_position()
     return rand_pos
 
   def find_nearest(self, x_rand: Point) -> Point:
-    nearest_geoms = nearest_points(self.farrt_tree, x_rand)
+    nearest_geoms = nearest_points(multipoint_without(self.farrt_tree, x_rand), x_rand)
     nearest_pt = nearest_geoms[0]
     return nearest_pt
 
@@ -121,16 +136,8 @@ class FARRT(PartiallyObservablePlanner):
       )
       return ball_radius
     
-    nearby_points = self.farrt_tree.intersection(x_new.buffer(find_ball_radius()))
-
-    if nearby_points.is_empty:
-      return MultiPoint()
-    elif isinstance(nearby_points, MultiPoint):
-      return nearby_points
-    elif isinstance(nearby_points, Point):
-      return MultiPoint([nearby_points])
-    else:
-      return MultiPoint()
+    nearby_points = multipoint_without(self.farrt_tree, x_new).intersection(x_new.buffer(find_ball_radius()))
+    return as_multipoint(nearby_points)
 
   def get_min_cost_point(self, nearby_pts: MultiPoint, x_nearest: Point, x_new: Point) -> Point:
     """
@@ -194,20 +201,35 @@ class FARRT(PartiallyObservablePlanner):
         if self.get_cost_to_reach(x_nearby) > cost_with_new:
             self.reassign_parent(pt=x_nearby, parent=x_new, cost=cost_with_new)
 
-  def reached_goal(self, x_new: Point) -> bool:
-    return x_new.distance(self.x_goal) < self.goal_reached_thresh
+  def reached_goal(self, x_new: Point, *, goal: Point = None, threshold:float = None) -> bool:
+    if goal is None:
+      goal = self.x_goal_pt
+    if threshold is None:
+      threshold = self.goal_reached_thresh
+    return x_new.distance(goal) < self.goal_reached_thresh
 
-  def build_farrt_tree(self) -> None:
-    self.farrt_tree.empty() 
+  def build_farrt_tree(self, *, root: Point, goal_pt: Point, goal_threshold:float = None) -> None:
+    """
+    Builds the farrt tree from the root to the goal
+    """
+    if goal_threshold is None:
+      goal_threshold = self.goal_reached_thresh
+    self.farrt_tree = MultiPoint()
     self.farrt_vertices.clear()
     self.farrt_edges.clear()
-    self.add_start_vertex(self.x_start_pt)
+    self.add_start_vertex(root)#self.x_start_pt
 
     final_pt = None
     final_pt_cost = float('inf')
 
-    for i in range(self.iters):
-      x_rand = self.sample_free(self.x_goal_pt)
+    i = 0
+    while i < self.iters or final_pt is None:
+      if self.display_every_n >= 1 and i % (self.display_every_n*2) == 0:
+        print(f"RRT building iteration {i}")
+        if i > 1000 and i % 1000 == 0:
+          self.render(visualize=True)
+
+      x_rand = self.sample_free(goal_pt, buffer_radius=self.obstacle_avoidance_radius if i < self.iters/2 else 0)
       x_nearest = self.find_nearest(x_rand)
       x_new = self.steer(x_nearest, x_rand)
       if self.edge_obstacle_free(x_nearest, x_new):
@@ -223,7 +245,7 @@ class FARRT(PartiallyObservablePlanner):
         # Main difference between RRT and RRT*, modify the points in the nearest set to optimise local path costs.
         self.do_rrtstar_rewiring(nearby_points, x_min, x_new)
 
-        if self.reached_goal(x_new):
+        if self.reached_goal(x_new, goal=goal_pt, threshold=goal_threshold):
           if self.built_tree: # subsequent runs should just terminate once goal is reached
             final_pt = x_new
             break
@@ -231,16 +253,24 @@ class FARRT(PartiallyObservablePlanner):
             if min_cost < final_pt_cost:
               final_pt = x_new
               final_pt_cost = min_cost
+      i += 1
     return final_pt,final_pt_cost
 
-  def extract_path(self, final_pt: Point) -> list[Node]:
-    curr = final_pt
+  def extract_path(self, *, endpoint: Point, root: Point) -> list[Node]:
+    curr = endpoint
     path: list[Point] = []
-    while curr != self.curr_pos.coord:
-      path.append(curr)
+    while curr != root:
+      # i = len(path)
+      # if self.display_every_n >= 1 and i % self.display_every_n == 0:
+      #   print(f"path point {i}: {curr.coords[0]}")
+      if curr is None:
+        print("ERROR: curr is None!", list(map(str,path)))
+        self.render(visualize=True)
+        break
       curr = self.get_parent(curr)
+      path.append(curr)
     # path.append(self.curr_pos.coord)
-    path.reverse() # curr pos first
+    # path.reverse() # curr pos first
     node_path = []
     for i,pt in enumerate(path):
       parent = self.curr_pos if i == 0 else node_path[i-1]

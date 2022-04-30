@@ -3,10 +3,6 @@ from shapely.geometry.base import BaseGeometry
 
 class Node:
   def __init__(self, coord: Point, parent: 'Node'=None) -> None:
-    if isinstance(coord, BaseGeometry):
-      coord = coord.centroid
-    if isinstance(coord, tuple):
-      coord = Point(coord)
     if isinstance(coord, Point):
       self.coord = coord
     else:
