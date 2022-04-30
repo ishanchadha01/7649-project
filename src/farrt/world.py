@@ -14,11 +14,11 @@ class World():
     self.obstacles: MultiPolygon = obstacles or World.generate_default_obstacles(self.dims)
 
   @staticmethod
-  def generate_default_obstacles(dims: List[float], num_obstacles=50) -> MultiPolygon:
+  def generate_default_obstacles(dims: List[float], num_obstacles=100) -> MultiPolygon:
     obstacles = MultiPolygon()
     for i in range(num_obstacles):
       coord = Point(*[random.random() * dim for dim in dims])
-      size = 1 + random.random() * 8
+      size = 2 + random.random() * 4
       poly = coord.buffer(size, cap_style=CAP_STYLE.square)
       obstacles = obstacles.union(poly)
     return obstacles.intersection(Polygon([[0,0], [0, dims[1]], [dims[0], dims[1]], [dims[0], 0], [0,0]]))
@@ -37,7 +37,7 @@ class World():
     return as_multipolygon(obstervation)
 
   #@abstractmethod
-  def random_position(self, not_blocked=False) -> Point:
+  def random_position(self, /,*, not_blocked=False) -> Point:
     out = Point(*[random.random() * dim for dim in self.dims])
     if not_blocked:
       while self.obstacles.intersects(out.buffer(3)):

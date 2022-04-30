@@ -19,7 +19,9 @@ def as_point(pt: Any, /,*, error:bool = False) -> Point:
     raise TypeError('as_point() expects a Point, but got a {}'.format(type(pt)))
   return pt
 
-def as_multipoint(mp: MultiPoint, /) -> MultiPoint:
+def as_multipoint(mp: Any, /) -> MultiPoint:
+  if isinstance(mp, list) or isinstance(mp, tuple):
+    return MultiPoint(mp)
   if mp.is_empty:
     return MultiPoint()
   elif isinstance(mp, MultiPoint):
@@ -29,7 +31,9 @@ def as_multipoint(mp: MultiPoint, /) -> MultiPoint:
   else:
     return MultiPoint([])
 
-def as_multipolygon(mp: MultiPolygon, /) -> MultiPolygon:
+def as_multipolygon(mp: Any, /) -> MultiPolygon:
+  if isinstance(mp, list) or isinstance(mp, tuple):
+    return MultiPolygon(mp)
   if mp.is_empty:
     return MultiPolygon()
   elif isinstance(mp, MultiPolygon):

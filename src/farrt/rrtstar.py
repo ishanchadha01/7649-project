@@ -1,4 +1,5 @@
 import argparse
+from collections import defaultdict
 import os
 from copy import deepcopy
 import random
@@ -11,7 +12,7 @@ from queue import PriorityQueue
 from matplotlib import pyplot as plt
 
 from shapely.geometry.base import BaseGeometry
-from shapely.geometry import Point, LineString, MultiPoint
+from shapely.geometry import Point, LineString, MultiPoint, MultiPolygon
 from shapely.ops import nearest_points
 
 from farrt.PartiallyObservablePlanner import PartiallyObservablePlanner
@@ -32,7 +33,6 @@ class RRTStar(PartiallyObservablePlanner):
     self.iters = kwargs.get('iters', 2000)
     self.eps = kwargs.get('eps', .01)
 
-    self.detected_obstacles = BaseGeometry()
     self.steer_distance = kwargs.get('max_step_length', self.vision_radius / 3)
 
     self.obstacle_avoidance_radius = kwargs.get('obstacle_avoidance_radius', self.steer_distance * 2/3)
@@ -45,6 +45,7 @@ class RRTStar(PartiallyObservablePlanner):
     self.rrt_vertices: set[vertex_t] = set()
     self.rrt_edges: set[edge_t] = set()
     self.parent_map: dict[vertex_t, vertex_t] = {}
+    self.children_map: dict[vertex_t, set[vertex_t]] = defaultdict(set)
     self.cost_to_reach: dict[vertex_t, float] = {}
 
     self.free_points: MultiPoint = MultiPoint()
@@ -75,7 +76,7 @@ class RRTStar(PartiallyObservablePlanner):
       intersections = path_line.intersection(new_obstacles)
       # print(intersections)
       # print(new_obstacles)
-      self.replan(draw_intersections=intersections)
+      self.replan(new_obstacles=new_obstacles, draw_intersections=intersections)
 
   def handle_deleted_obstacles(self, deleted_obstacles: BaseGeometry) -> None:
       return super().handle_deleted_obstacles(deleted_obstacles)
@@ -107,7 +108,7 @@ class RRTStar(PartiallyObservablePlanner):
     # display the initial plan regardless of gui settings
     self.render(visualize=True)
 
-  def replan(self, **kwargs):
+  def replan(self, new_obstacles: MultiPolygon, **kwargs):
     """
     Replan the path from the current position to the goal.
     1. Rerun RRT* from current position to goal
@@ -238,13 +239,13 @@ class RRTStar(PartiallyObservablePlanner):
     self.rrt_vertices.add(vtx)
     self.rrt_edges.add((parent_vtx,vtx))
 
-    self.set_parent(pt, parent)
+    self.set_child_parent(child=pt, parent=parent)
     self.set_cost_to_reach(pt, cost)
 
   def reassign_parent(self, pt: Point, parent: Point, cost: float) -> None:
     """
     Reassign the parent of a vertex to a new parent, update cost to reach
-    Remove old edges from the rpevious parent if present
+    Remove old edges from the previous parent if present
     """
     prev_parent = self.get_parent(pt)
 
@@ -256,7 +257,7 @@ class RRTStar(PartiallyObservablePlanner):
     self.rrt_edges.discard((vtx,old_parent_vtx))
     self.rrt_edges.add((new_parent_vtx,vtx))
     
-    self.set_parent(pt, parent)
+    self.set_child_parent(child=pt, parent=parent)
     self.set_cost_to_reach(pt, cost)
 
   def do_rrtstar_rewiring(self, nearby_pts: MultiPoint, x_min: Point, x_new: Point) -> None:
@@ -305,8 +306,8 @@ class RRTStar(PartiallyObservablePlanner):
     while i < self.iters or final_pt is None:
       if self.display_every_n >= 1 and i % (self.display_every_n*2) == 0:
         print(f"RRT building iteration {i}")
-        if i > 1000 and i % 1000 == 0:
-          self.render(visualize=True)
+        # if self.gui and i > 1000 and i % 1000 == 0:
+        #   self.render(visualize=True)
 
       # sample a node, find the nearest existing node, and steer from nearest to sampled
       x_rand = self.sample_free(goal_pt, buffer_radius=self.obstacle_avoidance_radius if i < self.iters/2 else 0)
@@ -368,11 +369,30 @@ class RRTStar(PartiallyObservablePlanner):
       node_path.append(Node(pt,parent))
     return node_path
 
-  def get_parent(self, point: Point) -> Point:
-    return Point(self.parent_map[pt2tuple(point)])
+  def get_parent(self, point: Point, /,*, allow_none:bool = False) -> Point:
+    parent = self.parent_map[pt2tuple(point)]
+    if parent is None: # happens during severing for farrtstar
+      if allow_none:
+        return None
+      else:
+        print("ERROR: parent is None!", point)
+        self.render(visualize=True)
+        raise ValueError(f"No parent found for point {point}")
+    return Point(parent)
+  
+  def get_children(self, point: Point, /) -> set[vertex_t]:
+    return self.children_map[pt2tuple(point)]
 
-  def set_parent(self, point: Point, parent: Point) -> None:
-    self.parent_map[pt2tuple(point)] = pt2tuple(parent)
+  def set_child_parent(self, /,*, child: Point, parent: Point) -> None:
+    child = pt2tuple(child)
+    if parent is None:
+      old_parent = self.parent_map[child]
+      self.parent_map[child] = None
+      self.children_map[old_parent].discard(child)
+      return
+    parent = pt2tuple(parent)
+    self.parent_map[child] = parent
+    self.children_map[parent].add(child)
 
   def get_cost_to_reach(self, point: Point) -> float:
     return self.cost_to_reach[pt2tuple(point)]
@@ -391,12 +411,6 @@ class RRTStar(PartiallyObservablePlanner):
 
 
 if __name__=='__main__':
-  # extract run args run_count
-  parser = argparse.ArgumentParser()
-  parser.add_argument('-rc', type=int, dest='run_count')
-  args = parser.parse_args()
-  filtered_args = {k: v for k, v in vars(args).items() if v is not None}
-
   world = World()
-  rrt_star = RRTStar(world=world, x_start=Node(world.random_position(not_blocked=True)), x_goal=Node(world.random_position(not_blocked=True)), gui=True, **filtered_args)
+  rrt_star = RRTStar(world=world, x_start=Node(world.random_position(not_blocked=True)), x_goal=Node(world.random_position(not_blocked=True)), gui=True)
   rrt_star.run()

@@ -27,10 +27,7 @@ class RRTX(PartiallyObservablePlanner):
     self.iters = kwargs.get('iters', 1000)
     self.eps = kwargs.get('eps', .01)
 
-    self.detected_obstacles = BaseGeometry()
     self.intersecting_edges = set()
-    self.vision_radius = kwargs.get('vision_radius', 10)
-    self.max_step_length = kwargs.get('max_step_length', self.vision_radius / 2)
 
     self.rrtx_tree: list[Node] = [] # tree to calculate path to goal
     self.goal_reached_thresh = 1
@@ -133,12 +130,6 @@ class RRTX(PartiallyObservablePlanner):
 
 
 if __name__=='__main__':
-  # extract run args run_count
-  parser = argparse.ArgumentParser()
-  parser.add_argument('-rc', type=int, dest='run_count')
-  args = parser.parse_args()
-  filtered_args = {k: v for k, v in vars(args).items() if v is not None}
-
   world = World()
-  rrtx = RRTX(world=world, x_start=Node(world.random_position(not_blocked=True)), x_goal=Node(world.random_position(not_blocked=True)), gui=True, **filtered_args)
+  rrtx = RRTX(world=world, x_start=Node(world.random_position(not_blocked=True)), x_goal=Node(world.random_position(not_blocked=True)), gui=True)
   rrtx.run()

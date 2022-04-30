@@ -2,33 +2,39 @@ from abc import ABC, abstractmethod
 from copy import deepcopy
 import os
 import shutil
+from typing import Any
 import imageio
 from matplotlib import pyplot as plt
 
 from shapely.geometry.base import BaseGeometry
-from shapely.geometry import Point
+from shapely.geometry import Point, MultiPolygon
 
 from farrt.node import Node
 from farrt.plot import plot_planner
+from farrt.utils import as_multipolygon, as_point
 from farrt.world import World
 
 class PartiallyObservablePlanner(ABC):
-  def __init__(self, world: World, x_start: Node, x_goal: Node, **kwargs) -> None:
+  def __init__(self, world: World, x_start: Any, x_goal: Any, **kwargs) -> None:
     self.gui = kwargs.pop('gui', True)
+    self.force_no_visualization = kwargs.pop('force_no_visualization', False)
     self.outdir = kwargs.pop('outdir', f'{self.__class__.__name__.lower()}-gifs')
     self.run_count = kwargs.pop('run_count', PartiallyObservablePlanner.default_run_count(self.outdir))
-    self.tmp_img_dir = os.path.join(self.outdir, f'run-{self.run_count}-tmp')
-    self.gif_output_path = os.path.join(self.outdir, f'run-{self.run_count}.gif')
+    self.gif_name = kwargs.pop('gif_name', f'run-{self.run_count}')
+    self.tmp_img_dir = os.path.join(self.outdir, f'{self.gif_name}-tmp')
+    self.gif_output_path = os.path.join(self.outdir, f'{self.gif_name}.gif')
     self.display_every_n = kwargs.pop('display_every_n', 100)
 
     self.world = world
-    self.x_start = x_start
-    self.x_goal = x_goal
-    self.curr_pos = deepcopy(x_start)
+    self.x_start = Node(as_point(x_start))
+    self.x_goal = Node(as_point(x_goal))
+    self.curr_pos = deepcopy(self.x_start)
 
+    self.detected_obstacles = MultiPolygon()
     self.vision_radius = kwargs.get('vision_radius', 10)
-    self.planned_path: list[Node] = []
+    self.max_step_length = kwargs.get('max_step_length', self.vision_radius / 2)
 
+    self.planned_path: list[Node] = []
     self.position_history: list[Node] = [Node(coord=self.x_start.coord, parent=None)]
 
     # make sure kwargs is empty
@@ -46,9 +52,9 @@ class PartiallyObservablePlanner(ABC):
     update the detected_obstacles geometry based on new observations from the world
     """
     observations = self.world.make_observations(self.curr_pos, self.vision_radius)
-    new_obstacles = observations - self.detected_obstacles
-    deleted_obstacles = self.detected_obstacles - observations
-    self.detected_obstacles = self.detected_obstacles.union(observations)
+    new_obstacles = as_multipolygon(observations - self.detected_obstacles)
+    deleted_obstacles = as_multipolygon(self.detected_obstacles - observations)
+    self.detected_obstacles = as_multipolygon(self.detected_obstacles.union(observations))
     # if not new_obstacles.is_empty: # new obstacles detected
     self.handle_new_obstacles(new_obstacles)
     # if not deleted_obstacles.is_empty: # obstacles disappeared
@@ -59,7 +65,7 @@ class PartiallyObservablePlanner(ABC):
     pass
 
   @abstractmethod
-  def handle_new_obstacles(self, new_obstacles: BaseGeometry) -> None:
+  def handle_new_obstacles(self, new_obstacles: MultiPolygon) -> None:
     """
     called whenever new obstacles are detected at an observation step
     this function is responsible for updating self.planned_path if necessary
@@ -67,7 +73,7 @@ class PartiallyObservablePlanner(ABC):
     pass
 
   @abstractmethod
-  def handle_deleted_obstacles(self, deleted_obstacles: BaseGeometry) -> None:
+  def handle_deleted_obstacles(self, deleted_obstacles: MultiPolygon) -> None:
     """
     called whenever obstacles are no longer detected at an observation step
     this function is responsible for updating self.planned_path if necessary
@@ -165,7 +171,8 @@ class PartiallyObservablePlanner(ABC):
         plt.savefig(self.tmp_img_path(last_step, extra_save_count))
     # if visualize or not saving or displaying the nth step
     if visualize or (save_step is None and not save_frame) or (self.display_every_n >= 1 and save_step is not None and (save_step % self.display_every_n == 0)):
-      plt.show()
+      if not self.force_no_visualization:
+        plt.show()
     plt.close()
 
   def save_gif(self) -> None:
