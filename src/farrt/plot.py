@@ -117,7 +117,7 @@ def plot_world(world: World, draw_obstacles: bool = True, **kwargs):
   ax.set_ylim([0,world.dims[1]])
   return fig,ax
 
-def plot_planner(world: World = None, curr_pos: Node = None, goal:Node = None, observations: BaseGeometry = None, position_history: list[Node] = None, rrt_tree:list[Node] = None, rrt_parents:dict = None, planned_path:list[Node] = None, **kwargs):
+def plot_planner(world: World = None, curr_pos: Node = None, goal:Node = None, observations: BaseGeometry = None, position_history: list[Node] = None, rrt_tree:list[Node] = None, rrt_parents:dict = None, planned_path:list[Node] = None, free_points:MultiPoint=None, **kwargs):
   if 'fig_ax' in kwargs:
     fig,ax = kwargs.pop('fig_ax')
   else:
@@ -127,10 +127,7 @@ def plot_planner(world: World = None, curr_pos: Node = None, goal:Node = None, o
   if world is not None:
     plot_world(world, ax=ax, draw_obstacles=kwargs.pop('draw_world_obstacles', True), obstacle_color='black', obstacle_edge_color='red')
   if observations is not None:
-    if observations.is_empty:
-      print('No observations to plot')
-    else:
-      plot_polygons(observations, ax=ax, facecolor='green', edgecolor='blue')
+    plot_polygons(observations, ax=ax, facecolor='green', edgecolor='blue')
   
   if draw_intersections is not None:
     if draw_intersections.is_empty:
@@ -146,8 +143,10 @@ def plot_planner(world: World = None, curr_pos: Node = None, goal:Node = None, o
   if position_history is not None:
     plot_points(position_history, ax=ax, marker=".", markersize=3, markeredgecolor="pink", markerfacecolor="pink", edgecolor='pink', linewidth=1)
   if planned_path is not None:
-    plot_points(planned_path, ax=ax, marker=".", markersize=5, markeredgecolor="orange", markerfacecolor="orange", edgecolor='orange', linewidth=3)
-  
+    plot_points(planned_path, ax=ax, marker=".", markersize=5, markeredgecolor="orange", markerfacecolor="orange", edgecolor='orange', linewidth=1)
+  if free_points is not None:
+    plot_points(free_points, ax=ax, marker=".", markersize=5, markeredgecolor="blue", markerfacecolor="blue", linewidth=1)
+
   if curr_pos is not None:
     plot_point(ax, curr_pos, marker=".", markersize=6, markeredgecolor="red", markerfacecolor="red")
   if goal is not None:
