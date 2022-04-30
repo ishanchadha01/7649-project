@@ -21,3 +21,5 @@ listener
 __pycache__/
 
 .vscode
+
+./test.py

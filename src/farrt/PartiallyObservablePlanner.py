@@ -53,7 +53,7 @@ class PartiallyObservablePlanner(ABC):
       self.handle_deleted_obstacles(deleted_obstacles)
 
   @abstractmethod
-  def update_plan() -> None:
+  def update_plan(self) -> None:
     pass
 
   @abstractmethod
@@ -84,10 +84,11 @@ class PartiallyObservablePlanner(ABC):
       if os.path.exists(self.tmp_img_dir):
         shutil.rmtree(self.tmp_img_dir)
       os.makedirs(self.tmp_img_dir)
-
+      self.render(save_step=0) # render out initial state
+    
     # make initial observation
     self.observe_world()
-    step = 0
+    step = 1
     while not self.curr_pos.same_as(self.x_goal):
       # render out the planner at the start of each step
       print(f'Step: {step} - Distance: {self.curr_pos.dist(self.x_goal)}')
@@ -113,7 +114,7 @@ class PartiallyObservablePlanner(ABC):
     return dict()
 
   def tmp_img_path(self, step: int, addition: int = 0) -> str:
-    assert step >= 0 and addition >= 0
+    assert step >= 0 and addition >= 0 and "step and addition must be non-negative but got step={} and addition={}".format(step, addition)
     return os.path.join(self.tmp_img_dir, f'step-{step:04d}.{addition:04d}.png')
 
   def render(self,save_step:int=None,save_frame:bool=False,visualize:bool=False, **kwargs) -> str:
@@ -145,8 +146,6 @@ class PartiallyObservablePlanner(ABC):
         while os.path.exists(self.tmp_img_path(last_step)):
           last_step += 1
         last_step -= 1
-        if last_step == -1:
-          last_step = 0
         # find next available step addition number
         extra_save_count = 1
         while os.path.exists(self.tmp_img_path(last_step, extra_save_count)):
