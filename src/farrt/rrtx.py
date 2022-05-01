@@ -121,6 +121,8 @@ class RRTX(RRTStar):
     # since the update to the lookahead estimate is at least that much]
     # sample from the orphan set based on lookahead values, prolly bidirectional search from curr pos and path among orphan nodes
     # if time, do aco every time we run into an obstacle to avoid dead ends, similar to reasoning for APF for farrt
+    self.update_key(self.curr_pos)
+    self.reduce_inconsistency()
 
   def handle_new_obstacles(self, new_obstacles: BaseGeometry) -> None:
     super().handle_new_obstacles(new_obstacles)
