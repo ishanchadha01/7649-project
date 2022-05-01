@@ -25,3 +25,7 @@ class Node:
   
   def edgeTo(self, other: 'Node') -> LineString:
     return LineString([self.coord, other.coord])
+  
+  def edgeToParent(self) -> LineString:
+    assert self.parent is not None
+    return self.edgeTo(self.parent)

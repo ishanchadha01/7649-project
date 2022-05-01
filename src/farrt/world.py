@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from typing import List, TypeVar
 import random
 from shapely.geometry import Point, MultiPolygon, Polygon, CAP_STYLE
+from shapely.wkt import loads
 
 from farrt.node import Node
 from farrt.utils import as_multipolygon, as_point
@@ -9,9 +10,12 @@ from farrt.utils import as_multipolygon, as_point
 
 #class World(ABC):
 class World():
-  def __init__(self, dims: List[float] = None, obstacles: MultiPolygon = None) -> None:
+  def __init__(self, dims: List[float] = None, obstacles: MultiPolygon = None, /,*, obstacle_str:str = None) -> None:
     self.dims = dims or [100,100]
-    self.obstacles: MultiPolygon = obstacles or World.generate_default_obstacles(self.dims)
+    if obstacle_str is not None:
+      self.obstacles = loads(obstacle_str)
+    else:
+      self.obstacles: MultiPolygon = obstacles or World.generate_default_obstacles(self.dims)
 
   @staticmethod
   def generate_default_obstacles(dims: List[float], num_obstacles=100) -> MultiPolygon:

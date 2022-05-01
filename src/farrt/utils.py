@@ -1,4 +1,5 @@
 from typing import Any
+import numpy as np
 from shapely.geometry import LineString, Point, MultiPoint, Polygon, MultiPolygon
 from shapely.geometry.base import BaseGeometry
 
@@ -7,26 +8,28 @@ from farrt.node import Node
 def as_point(pt: Any, /,*, error:bool = False) -> Point:
   if isinstance(pt, Point):
     return pt
-  elif isinstance(pt, tuple):
+  if isinstance(pt, tuple):
     return Point(pt)
-  elif isinstance(pt, list):
+  if isinstance(pt, list):
     return Point(pt)
-  elif isinstance(pt, BaseGeometry):
+  if isinstance(pt, BaseGeometry):
     return Point(pt.centroid)
-  elif isinstance(pt, Node):
+  if isinstance(pt, Node):
     return pt.coord
   if error:
     raise TypeError('as_point() expects a Point, but got a {}'.format(type(pt)))
   return pt
 
 def as_multipoint(mp: Any, /) -> MultiPoint:
+  if isinstance(mp, MultiPoint):
+    return mp
   if isinstance(mp, list) or isinstance(mp, tuple):
     return MultiPoint(mp)
+  if isinstance(mp, set):
+    return MultiPoint(list(mp))
   if mp.is_empty:
     return MultiPoint()
-  elif isinstance(mp, MultiPoint):
-    return mp
-  elif isinstance(mp, Point):
+  if isinstance(mp, Point):
     return MultiPoint([mp])
   else:
     return MultiPoint([])
@@ -36,9 +39,9 @@ def as_multipolygon(mp: Any, /) -> MultiPolygon:
     return MultiPolygon(mp)
   if mp.is_empty:
     return MultiPolygon()
-  elif isinstance(mp, MultiPolygon):
+  if isinstance(mp, MultiPolygon):
     return mp
-  elif isinstance(mp, Polygon):
+  if isinstance(mp, Polygon):
     return MultiPolygon([mp])
   else:
     return MultiPolygon([])
@@ -50,5 +53,23 @@ def shapely_edge(pt0: Point, pt1: Point, /) -> LineString:
   return LineString([pt0, pt1])
 
 def multipoint_without(mp: MultiPoint, pt: Point) -> MultiPoint:
-  difference = mp - pt
+  difference = as_multipoint(mp) - pt
   return as_multipoint(difference)
+
+
+def crop_field(data, center, lim):
+    ''' 
+    Crop the image by selecting a center point and only including
+    all pixels within lim distance of the center point
+    '''
+    return data[center[1]-lim:center[1]+lim, center[0]-lim:center[0]+lim]
+
+def normalize_field(field):
+    '''
+    Max-normalize the field based on magnitude of vec
+    '''
+    # divide each vector by max of magnitude of any vector
+    magnitude = np.linalg.norm(field, axis=2)
+    field = field / np.max(magnitude)
+
+    return field
