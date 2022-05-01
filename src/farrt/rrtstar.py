@@ -105,8 +105,9 @@ class RRTStar(PartiallyObservablePlanner):
     self.planned_path = self.extract_path(endpoint=final_pt,root=self.x_goal_pt,reverse=True)
     print(f'Path: {len(self.planned_path)}')
 
-    # display the initial plan regardless of gui settings
-    self.render(visualize=True)
+    # display the initial plan
+    # if self.gui:
+    #   self.render(visualize=True)
 
   def replan(self, new_obstacles: MultiPolygon, **kwargs):
     """
@@ -263,8 +264,6 @@ class RRTStar(PartiallyObservablePlanner):
     self.rrt_edges.discard((vtx,old_parent_vtx))
     self.rrt_edges.add((new_parent_vtx,vtx))
     
-    # if vtx == (98.82752243302559, 63.43880725821892):
-    #   print(f'Attempt to remove child {pt} from parent {prev_parent} - {self.get_children(prev_parent)}')
     self.set_child_parent(child=pt, parent=parent)
     if vtx in self.get_children(prev_parent):
       print(f'Failed to remove child {pt} from parent {prev_parent} - {self.get_children(prev_parent)}')
@@ -283,7 +282,8 @@ class RRTStar(PartiallyObservablePlanner):
       if self.edge_obstacle_free(x_new, x_nearby):
         cost_with_new = self.get_cost_to_reach(x_new) + self.get_edge_cost(x_new, x_nearby)
         if self.get_cost_to_reach(x_nearby) > cost_with_new:
-            self.reassign_parent(pt=x_nearby, parent=x_new, cost=cost_with_new, allow_same_parent=x_new == self.curr_pos.coord)
+          # allow reassigning to same parent if new node is current position (b/c curr pos may be sampled many times)
+          self.reassign_parent(pt=x_nearby, parent=x_new, cost=cost_with_new, allow_same_parent=x_new == self.curr_pos.coord)
 
   def reached_goal(self, x_new: Point, *, goal: Point = None, threshold:float = None) -> bool:
     """
@@ -407,16 +407,7 @@ class RRTStar(PartiallyObservablePlanner):
     # check if the child already has a parent - sever the connection
     old_parent = self.get_parent(child, allow_none=True)
     if old_parent is not None:
-      # if child == (98.82752243302559, 63.43880725821892):
-      #   print(f"Severing {child} from {old_parent} - {self.get_children(old_parent)}")
-      # old_children = self.get_children(old_parent)
-      # old_children.discard(child)
-      # self.parent_to_children_map[pt2tuple(old_parent)] = old_children
-      # self.parent_to_children_map.setdefault(pt2tuple(old_parent), set()).discard(child)
       self.get_children(old_parent).discard(child)
-      assert child not in self.get_children(old_parent)
-      # if child == (98.82752243302559, 63.43880725821892):
-      #   print(f"Severed {self.get_children(old_parent)}")
 
     # if the new parent is None, remove the child from the children map
     if parent is None and child in self.parent_to_children_map:
