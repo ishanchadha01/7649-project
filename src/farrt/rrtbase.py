@@ -53,7 +53,20 @@ class RRTBase(PartiallyObservablePlanner):
 
     self.cost_to_goal: dict[vertex_t, float] = {}
 
-
+  def find_ball_radius(self, num_vertices: int) -> float:
+    """
+    Determine the radius of the ball to search for nearby points
+    """
+    unit_volume = math.pi
+    dimensions = len(self.world.dims)
+    minx,miny,maxx,maxy = self.world.getBounds()
+    gamma = (2**dimensions)*(1.0 + 1.0/dimensions) * (maxx - minx) * (maxy - miny)
+    ball_radius = min(
+      ((gamma/unit_volume) * math.log(num_vertices) / num_vertices)**(1.0/dimensions),
+      self.steer_distance
+    )
+    return ball_radius
+  
   def sample_free(self, goal_pt: Point, *, buffer_radius:float = None, require_free:bool = True) -> Point:
     """
     Sample a free point in the world
