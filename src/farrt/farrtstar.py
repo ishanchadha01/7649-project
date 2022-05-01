@@ -348,7 +348,7 @@ class FARRTStar(RRTStar):
       # if there is an obstacle free path from the nearest node to the new node, analyze neighbors and add to tree
       if self.edge_obstacle_free(x_nearest, x_new):
         # find nearby points to the new point
-        nearby_points = self.find_nearby_pts(x_new, radius=self.find_ball_radius(), pt_source=self.rrt_tree)
+        nearby_points = self.find_nearby_pts(x_new, radius=self.find_ball_radius(num_vertices=len(self.rrt_vertices)), pt_source=self.rrt_tree)
 
         # get the minimum point from the set
         x_min,min_cost = self.get_min_cost_point(nearby_points, x_nearest, x_new)

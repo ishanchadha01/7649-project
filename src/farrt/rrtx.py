@@ -50,7 +50,7 @@ class RRTX(RRTBase):
     self.perm_in_neighbors_map: dict[vertex_t, set[vertex_t]] = defaultdict(set) # N-_0 from RRTx paper
     self.running_in_neighbors_map: dict[vertex_t, set[vertex_t]] = defaultdict(set) # N-_r from RRTx paper
 
-    self.lookahead_estimate: dict[vertex_t, float] = defaultdict(float('inf'))
+    self.lookahead_estimate: dict[vertex_t, float] = defaultdict(lambda: float('inf'))
     
     self.traj_cost_map: dict[edge_t, float] = defaultdict(lambda: float('inf')) # d_pi from RRTx paper
 
@@ -73,7 +73,16 @@ class RRTX(RRTBase):
     Update internals based on the new obstacles
     based on algo11: addNewObstacle(O) in RRTx paper
     """
-    for edge in self.rrt_edges: # Line 6 from Algo7: updateObstacles() in RRTx paper
+    # get the points that are within the obstacles (or within half the obstacle avoidance radius of them)
+    conflicting_pts = as_multipoint(self.rrtx_graph.intersection(self.detected_obstacles.buffer(self.obstacle_avoidance_radius/2)))
+
+    edges: set[edge_t] = set()
+    for v_blocked in conflicting_pts.geoms:
+      v_blocked = pt2tuple(v_blocked)
+      edges.update(map(lambda u_in: (u_in,v_blocked), self.get_in_neighbors(v_blocked)))
+      edges.update(map(lambda u_out: (v_blocked,u_out), self.get_out_neighbors(v_blocked)))
+
+    for edge in edges: # Line 6 from Algo7: updateObstacles() in RRTx paper
       edge_geom = LineString(edge)
       # filter edges that intersect the new obstacles
       if not edge_geom.intersects(new_obstacles):
@@ -91,7 +100,10 @@ class RRTX(RRTBase):
     self.verify_queue(self.curr_pos)
     self.reduce_inconsistency()
 
-  def update_plan(self) -> None:
+  def handle_deleted_obstacles(self, deleted_obstacles: MultiPolygon) -> None:
+      return super().handle_deleted_obstacles(deleted_obstacles)
+
+  def update_planner(self) -> None:
     # if self.lookahead_estimate[self.curr_pos] != self.cost_to_goal[self.curr_pos]:
     #   nearby_pts = self.find_nearest(self.curr_pos, pt_source=self.rrtx_graph)
     #   v_nearest = self.find_nearby_pts(self.curr_pos, self.shrinking_ball_radius, pt_source=self.rrtx_graph)
@@ -104,7 +116,9 @@ class RRTX(RRTBase):
     # self.reduce_inconsistency()
     
     # shrink ball radius
-    self.shrinking_ball_radius = math.floor((math.prod(self.world.dims) * math.log(self.iters) / self.iters) ** (1/2)) # radius of ball for neighbors
+    # N = len(self.rrtx_graph.geoms)
+    # self.shrinking_ball_radius = math.floor((math.prod(self.world.dims) * math.log(N) / N) ** (1/2)) # radius of ball for neighbors
+    self.shrinking_ball_radius = self.find_ball_radius(len(self.rrtx_graph.geoms))
 
     # sample a new node and add it to the tree
     self.do_sampling()
@@ -305,6 +319,10 @@ class RRTX(RRTBase):
 
   def step_through_plan(self) -> Node:
     children = self.get_children(self.curr_pos)
+    nearby = multipoint_without(self.rrtx_graph.intersection(self.curr_pos.coord.buffer(self.steer_distance*0.75)), self.curr_pos.coord)
+    for pt in nearby.geoms:
+      if self.edge_obstacle_free(self.curr_pos.coord, pt):
+        children.add(pt2tuple(pt))
     if len(children) == 0:
       return self.curr_pos
     children = list(filter(lambda child: self.get_parent(child, allow_none=True) == as_point(self.curr_pos), children))
@@ -369,7 +387,7 @@ class RRTX(RRTBase):
     inserts a new vertex into the tree
     """
     if add_to_graph:
-      self.rrtx_graph = self.rrtx_graph.union(as_point(point))
+      self.rrtx_graph = as_multipoint(self.rrtx_graph.union(as_point(point)))
     self.tree_vertices.add(pt2tuple(point))
 
   def remove_tree_vtx(self, point: Point) -> None:
@@ -391,7 +409,7 @@ class RRTX(RRTBase):
     self.orphans.discard(pt2tuple(point))
 
   def in_graph(self, point: Point) -> bool:
-    return pt2tuple(point) in self.rrt_vertices
+    return pt2tuple(point) in (self.tree_vertices | self.orphans)
 
   def set_parent(self, /,*, child: Point, parent: Point):
     child = pt2tuple(child)
@@ -473,6 +491,15 @@ class RRTX(RRTBase):
   def set_traj_cost(self, edge, cost):
     edge = tuple(sorted(line2tuple(edge)))
     self.traj_cost_map[edge] = cost
+
+  def get_render_kwargs(self) -> dict:
+    return {
+      'extra_points': {
+        'yellow': self.rrtx_graph,
+        'orange': self.tree_vertices,
+        'blue': self.orphans,
+      }
+    }
 
 
 if __name__=='__main__':

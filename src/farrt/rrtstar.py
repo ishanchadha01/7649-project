@@ -110,21 +110,6 @@ class RRTStar(RRTBase):
     # if self.gui:
     #   self.render()
 
-  def find_ball_radius(self):
-    """
-    Determine the radius of the ball to search for nearby points
-    """
-    unit_volume = math.pi
-    num_vertices = len(self.rrt_vertices)
-    dimensions = len(self.world.dims)
-    minx,miny,maxx,maxy = self.world.getBounds()
-    gamma = (2**dimensions)*(1.0 + 1.0/dimensions) * (maxx - minx) * (maxy - miny)
-    ball_radius = min(
-      ((gamma/unit_volume) * math.log(num_vertices) / num_vertices)**(1.0/dimensions),
-      self.steer_distance
-    )
-    return ball_radius
-
   def get_min_cost_point(self, nearby_pts: MultiPoint, x_nearest: Point, x_new: Point) -> Point:
     """
     Returns the point in nearby_pts that has the minimum cost to get to x_new
@@ -242,7 +227,7 @@ class RRTStar(RRTBase):
       # if there is an obstacle free path from the nearest node to the new node, analyze neighbors and add to tree
       if self.edge_obstacle_free(x_nearest, x_new):
         # find nearby points to the new point
-        nearby_points = self.find_nearby_pts(x_new, radius=self.find_ball_radius(), pt_source=self.rrt_tree)
+        nearby_points = self.find_nearby_pts(x_new, radius=self.find_ball_radius(num_vertices=len(self.rrt_vertices)), pt_source=self.rrt_tree)
 
         # get the minimum point from the set
         x_min,min_cost = self.get_min_cost_point(nearby_points, x_nearest, x_new)

@@ -61,7 +61,7 @@ def pt2tuple(pt: Point, /) -> tuple[float,float]:
   return as_point(pt).coords[0]
 
 def shapely_edge(pt0: Point, pt1: Point, /) -> LineString:
-  return LineString([pt0, pt1])
+  return LineString([as_point(pt0), as_point(pt1)])
 
 def line2tuple(line: LineString, /) -> tuple[tuple[float,float],tuple[float,float]]:
   return tuple(as_linestring(line).coords)

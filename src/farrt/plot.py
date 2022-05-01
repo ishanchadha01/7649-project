@@ -37,6 +37,8 @@ def plot_points(points: list, parents_map:dict = None, children_map:defaultdict[
   if isinstance(points, BaseMultipartGeometry):
     print(f'plot_points() expects a list of Points, but got a {type(points)}')
     points = points.geoms
+  if isinstance(points, set):
+    points = list(points)
   has_rrt_maps = parents_map is not None or children_map is not None
   if has_rrt_maps or (len(points) > 0 and isinstance(points[0], Node)):
     kwargs_without_marker = {k:v for k,v in kwargs.items() if k != 'marker'}
