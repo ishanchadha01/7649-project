@@ -1,3 +1,4 @@
+from collections import defaultdict
 import numpy as np
 from matplotlib.path import Path
 from matplotlib.patches import PathPatch
@@ -7,7 +8,7 @@ from shapely.geometry import Polygon, Point, MultiPoint
 from shapely.geometry.base import BaseGeometry, BaseMultipartGeometry
 import matplotlib.pyplot as plt
 from farrt.node import Node
-from farrt.utils import as_point
+from farrt.utils import as_point, crop_field, normalize_field, pt2tuple
 
 from farrt.world import World
 
@@ -26,14 +27,18 @@ def plot_line(ax, start: Point, end: Point, **kwargs):
   else:
     raise TypeError('plot_line() expect two Points, but got a {} and {}'.format(type(start), type(end)))
 
-def plot_points(points: list, parents_map:dict = None, ax=None, **kwargs):
+def plot_points(points: list, parents_map:dict = None, children_map:defaultdict[set] = None, ax=None, **kwargs):
   if ax is None:
     fig,ax = plt.subplots()
   else:
     fig=None
   if isinstance(points, MultiPoint):
     points = points.geoms
-  if (parents_map is not None) or (len(points) > 0 and isinstance(points[0], Node)):
+  if isinstance(points, BaseMultipartGeometry):
+    print(f'plot_points() expects a list of Points, but got a {type(points)}')
+    points = points.geoms
+  has_rrt_maps = parents_map is not None or children_map is not None
+  if has_rrt_maps or (len(points) > 0 and isinstance(points[0], Node)):
     kwargs_without_marker = {k:v for k,v in kwargs.items() if k != 'marker'}
     if 'edgecolor' in kwargs:
       kwargs_without_marker['color'] = kwargs_without_marker.pop('edgecolor')
@@ -42,14 +47,20 @@ def plot_points(points: list, parents_map:dict = None, ax=None, **kwargs):
     for point in points:
       parent = None
       coord = None
+      children = None
       if isinstance(point, Node):
         parent = point.parent
         coord = point.coord
       elif parents_map is not None:
-        parent = parents_map.get(point.coords[0], None)
+        parent = parents_map.get(pt2tuple(point), None)
         coord = point
+      if children_map is not None:
+        children = children_map[pt2tuple(point)]
       if coord is not None and parent is not None:
         plot_line(ax, parent, coord, marker='', linestyle='-', linewidth=kwargs_without_marker.pop('linewidth', 2), **kwargs_without_marker)
+      if coord is not None and children is not None and len(children) > 0:
+        for child in children:
+          plot_line(ax, coord, child, marker='', linestyle='-', linewidth=kwargs_without_marker.pop('linewidth', 2), **kwargs_without_marker)
   if 'edgecolor' in kwargs and len(points) > 0:
     print('edgecolor not handled!')
     print(len(points), points)
@@ -117,7 +128,7 @@ def plot_world(world: World, draw_obstacles: bool = True, **kwargs):
   ax.set_ylim([0,world.dims[1]])
   return fig,ax
 
-def plot_planner(world: World = None, curr_pos: Node = None, goal:Node = None, observations: BaseGeometry = None, position_history: list[Node] = None, rrt_tree:list[Node] = None, rrt_parents:dict = None, planned_path:list[Node] = None, free_points:MultiPoint=None, **kwargs):
+def plot_planner(world: World = None, curr_pos: Node = None, goal:Node = None, observations: BaseGeometry = None, position_history: list[Node] = None, rrt_tree:list[Node] = None, rrt_parents:dict = None, rrt_children:defaultdict[set] = None, planned_path:list[Node] = None, free_points:MultiPoint=None, extra_points:MultiPoint=None, **kwargs):
   if 'fig_ax' in kwargs:
     fig,ax = kwargs.pop('fig_ax')
   else:
@@ -139,13 +150,20 @@ def plot_planner(world: World = None, curr_pos: Node = None, goal:Node = None, o
       plot_points(list(draw_intersections.coords), ax=ax, marker="o", markersize=10, markeredgecolor="purple", markerfacecolor="purple", linewidth=3)
   
   if rrt_tree is not None:
-    plot_points(rrt_tree, parents_map=rrt_parents, ax=ax, marker=".", markersize=3, markeredgecolor="yellow", markerfacecolor="yellow", edgecolor='yellow', linewidth=1)
+    plot_points(rrt_tree, parents_map=rrt_parents, children_map=rrt_children, ax=ax, marker=".", markersize=3, markeredgecolor="yellow", markerfacecolor="yellow", edgecolor='yellow', linewidth=1)
   if position_history is not None:
     plot_points(position_history, ax=ax, marker=".", markersize=3, markeredgecolor="pink", markerfacecolor="pink", edgecolor='pink', linewidth=1)
   if planned_path is not None:
     plot_points(planned_path, ax=ax, marker=".", markersize=5, markeredgecolor="orange", markerfacecolor="orange", edgecolor='orange', linewidth=1)
   if free_points is not None:
     plot_points(free_points, ax=ax, marker=".", markersize=5, markeredgecolor="blue", markerfacecolor="blue", linewidth=1)
+  if extra_points is not None:
+    if isinstance(extra_points, dict):
+      for color,pts in extra_points.items():
+        plot_points(pts, ax=ax, marker=".", markersize=8, markeredgecolor=color, markerfacecolor=color, linewidth=1)
+    else:
+      plot_points(extra_points, ax=ax, marker=".", markersize=8, markeredgecolor="white", markerfacecolor="white", linewidth=1)
+
 
   if curr_pos is not None:
     plot_point(ax, curr_pos, marker=".", markersize=6, markeredgecolor="red", markerfacecolor="red")
@@ -154,3 +172,30 @@ def plot_planner(world: World = None, curr_pos: Node = None, goal:Node = None, o
   
   fig.set_size_inches(8,8)
   return fig,ax
+
+def plot_potential_field(field, /,*, center=None, lim=None, figsize=(8,8), **kwargs):
+    '''
+    Plot the vector field at a given center with bounds of [center-lim,center+lim] in both x,y directions
+    '''
+    if isinstance(field, np.ndarray):
+      field = normalize_field(field)
+      dx,dy = (field[:,:,0], field[:,:,1])
+      shape = field.shape[:2]
+    else:
+      print(f'Plotting field using packed dx,dy tuple')
+      dx,dy = field
+      shape = dx.shape[:2]
+    x, y = np.meshgrid(np.arange(shape[0],dtype=int), np.arange(shape[1],dtype=int))
+
+    plt.figure(figsize=figsize)
+
+    if center is None:
+      center = (shape[0]//2, shape[1]//2)
+    if lim is None:
+      lim = min(shape[0], shape[1])//2
+
+    # Reverse y coordinates because image and axes y are reverses.
+    plt.quiver(crop_field(x,center,lim), crop_field(y,center,lim), crop_field(dx,center,lim), crop_field(dy,center,lim))
+    # plt.axis('off')
+    plt.show()
+
