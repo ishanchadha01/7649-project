@@ -18,7 +18,7 @@ class World():
       self.obstacles: MultiPolygon = obstacles or World.generate_default_obstacles(self.dims)
 
   @staticmethod
-  def generate_default_obstacles(dims: List[float], num_obstacles=100) -> MultiPolygon:
+  def generate_default_obstacles(dims: List[float], num_obstacles=70) -> MultiPolygon:
     obstacles = MultiPolygon()
     for i in range(num_obstacles):
       coord = Point(*[random.random() * dim for dim in dims])

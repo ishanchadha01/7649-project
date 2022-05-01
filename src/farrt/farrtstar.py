@@ -25,19 +25,21 @@ class FARRTStar(RRTStar):
   def __init__(self, *args, **kwargs) -> None:
     self.merge_threshold = kwargs.pop('merge_threshold', None)
     self.potential_field_force = kwargs.pop('potential_field_force', 5)
+    self.tree_attr_force = kwargs.pop('tree_attr_force', 0.5)
+    self.goal_attr_force = kwargs.pop('goal_attr_force', 0.2)
     super().__init__(*args, **kwargs)
     if self.merge_threshold is None:
       self.merge_threshold = self.steer_distance / 8
 
-    self.iters = max(self.iters, 4000)
+    self.iters = max(self.iters, 5000)
 
     self.free_points: MultiPoint = MultiPoint()
     self.potential_field = np.zeros((*self.world.dims, len(self.world.dims)))
 
-  def do_first_plan(self) -> None:
+  def setup_planner(self) -> None:
     if not self.detected_obstacles.is_empty:
       self.update_potential_field(self.detected_obstacles)
-    super().do_first_plan()
+    super().setup_planner()
 
   def replan(self, new_obstacles: MultiPolygon, **kwargs):
     """
@@ -106,7 +108,7 @@ class FARRTStar(RRTStar):
     self.rrt_vertices.discard(vtx)
     self.rrt_tree = multipoint_without(self.rrt_tree, as_point(pt))
 
-    self.set_cost_to_reach(pt, float('inf'))
+    self.set_cost_to_goal(pt, float('inf'))
 
   def do_tree_severing(self, previous_plan: list[Node]) -> tuple[MultiPoint, MultiPoint, MultiPoint]:
     """
@@ -208,19 +210,34 @@ class FARRTStar(RRTStar):
       # print(f'Potential field updated with new obstacle')
       self.render(save_frame=True, potential_field=self.potential_field)
 
-  def apply_potential_field(self, freed_pts: MultiPoint, /,*,field_force:float=None) -> MultiPoint:
+  def apply_potential_field(self, freed_pts: MultiPoint, /,*,field_force:float=None,tree_force:float = None,goal_force:float=None) -> MultiPoint:
     """
     push the given free points based on the potential field from the obstacles
     """
     print('Applying potential field to free points...')
     if field_force is None:
       field_force = self.potential_field_force  
+    if tree_force is None:
+      tree_force = self.tree_attr_force
+    if goal_force is None:
+      goal_force = self.goal_attr_force
     pushed_pts: list[Point] = []
 
     def get_movement_from_potential_field(pt: Point) -> tuple[float,float]:
       xInd = min(max(0, math.floor(pt.x)), self.world.dims[0]-1)
       yInd = min(max(0, math.floor(pt.y)), self.world.dims[1]-1)
       dx,dy = self.potential_field[yInd,xInd] * field_force
+      nearby_pts = self.find_nearby_pts(pt, radius=self.steer_distance * 1.5, pt_source=self.rrt_tree)
+      if not nearby_pts.is_empty:
+        avg_tree_point = nearby_pts.centroid
+        diff = np.array([avg_tree_point.x - pt.x, avg_tree_point.y - pt.y])
+        diff *= tree_force / np.linalg.norm(diff)
+        dx += diff[0]
+        dy += diff[1]
+      goal_diff = np.array([self.x_goal_pt.x - pt.x, self.x_goal_pt.y - pt.y])
+      goal_diff *= goal_force / np.linalg.norm(goal_diff)
+      dx += goal_diff[0]
+      dy += goal_diff[1]
       return dx,dy
 
     # if self.gui:
@@ -276,11 +293,7 @@ class FARRTStar(RRTStar):
     """
     sample points that are free and not in the tree
     """
-    # print('Sampling free points...')
-    # sample points that are free and not in the tree
-    # free_pts = self.free_pts.sample(self.free_pts_sample_size)
-    # return np.random.choice(self.free_points.geoms)
-    if random.random() < self.eps: # some % chance of returning goal node
+    if random.random() < self.eps * 2: # some higher % chance of returning goal node
       return goal_pt
     if frontier_radius is None:
       frontier_radius = self.steer_distance * 0.75
@@ -314,13 +327,13 @@ class FARRTStar(RRTStar):
     while not self.free_points.is_empty:# and (curr_vtx not in self.rrt_vertices):
       if self.display_every_n >= 1 and i % (self.display_every_n*2) == 0:
         print(f"FARRT rewiring iteration {i}")
-        if self.gui and i > 99 and i % 100 == 0:
+        if self.gui and i > 400 and i % 100 == 0:
           print(f"FARRT rewiring iteration {i} - frontier in white")
           self.render(visualize=True, extra_points=frontier)
 
       # sample a node from free points, find the nearest existing node, and steer from nearest to sampled
       x_free = self.sample_free_pts(frontier, goal_pt=goal)
-      x_nearest = self.find_nearest(x_free)
+      x_nearest = self.find_nearest(x_free, pt_source=self.rrt_tree)
       x_new = self.steer(x_nearest, x_free)
       if x_new != x_free: # if the new point is not the same as the sampled point
         print(f"Steering from {x_nearest} to {x_free} to get {x_new} - frontier in white")
@@ -328,14 +341,14 @@ class FARRTStar(RRTStar):
         if i > 99:
           if allow_for_far_goal:
             print('failed to steer to goal, must be too far! - allow new node creation')
-          self.render(visualize=True, extra_points=frontier)
+          # self.render(visualize=True, extra_points=frontier)
         if not allow_for_far_goal:
           continue
 
       # if there is an obstacle free path from the nearest node to the new node, analyze neighbors and add to tree
       if self.edge_obstacle_free(x_nearest, x_new):
         # find nearby points to the new point
-        nearby_points = self.find_nearby_pts(x_new)
+        nearby_points = self.find_nearby_pts(x_new, radius=self.find_ball_radius(), pt_source=self.rrt_tree)
 
         # get the minimum point from the set
         x_min,min_cost = self.get_min_cost_point(nearby_points, x_nearest, x_new)

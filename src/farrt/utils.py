@@ -46,11 +46,25 @@ def as_multipolygon(mp: Any, /) -> MultiPolygon:
   else:
     return MultiPolygon([])
 
+def as_linestring(edge: Any, /,*, error:bool = False) -> LineString:
+  if isinstance(edge, LineString):
+    return edge
+  if isinstance(edge, tuple):
+    return LineString(edge)
+  if isinstance(edge, list):
+    return LineString(edge)
+  if error:
+    raise TypeError('as_edge() expects a LineString, but got a {}'.format(type(edge)))
+  return edge
+
 def pt2tuple(pt: Point, /) -> tuple[float,float]:
   return as_point(pt).coords[0]
 
 def shapely_edge(pt0: Point, pt1: Point, /) -> LineString:
   return LineString([pt0, pt1])
+
+def line2tuple(line: LineString, /) -> tuple[tuple[float,float],tuple[float,float]]:
+  return tuple(as_linestring(line).coords)
 
 def multipoint_without(mp: MultiPoint, pt: Point) -> MultiPoint:
   difference = as_multipoint(mp) - pt

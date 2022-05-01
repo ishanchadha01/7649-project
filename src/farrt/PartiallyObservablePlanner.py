@@ -47,6 +47,9 @@ class PartiallyObservablePlanner(ABC):
       count += 1
     return count
 
+  def setup_planner(self) -> None:
+    pass
+
   def observe_world(self) -> None:
     """
     update the detected_obstacles geometry based on new observations from the world
@@ -55,13 +58,13 @@ class PartiallyObservablePlanner(ABC):
     new_obstacles = as_multipolygon(observations - self.detected_obstacles)
     deleted_obstacles = as_multipolygon(self.detected_obstacles - observations)
     self.detected_obstacles = as_multipolygon(self.detected_obstacles.union(observations))
-    # if not new_obstacles.is_empty: # new obstacles detected
-    self.handle_new_obstacles(new_obstacles)
     # if not deleted_obstacles.is_empty: # obstacles disappeared
     self.handle_deleted_obstacles(deleted_obstacles)
+    # if not new_obstacles.is_empty: # new obstacles detected
+    self.handle_new_obstacles(new_obstacles)
 
   @abstractmethod
-  def update_plan(self) -> None:
+  def update_planner(self) -> None:
     pass
 
   @abstractmethod
@@ -93,9 +96,11 @@ class PartiallyObservablePlanner(ABC):
         shutil.rmtree(self.tmp_img_dir)
       os.makedirs(self.tmp_img_dir)
       self.render(save_step=0) # render out initial state
-    
-    # make initial observation
-    self.observe_world()
+
+    self.setup_planner()
+
+    # # make initial observation
+    # self.observe_world()
     step = 1
     while True:
       # render out the planner at the start of each step
@@ -103,7 +108,10 @@ class PartiallyObservablePlanner(ABC):
       if self.gui:
         self.render(save_step=step)
 
-      # follow the planner's current plan and make new observations
+      # make observations
+      self.observe_world()
+
+      # follow the planner's current plan
       next_node = self.step_through_plan()
       self.curr_pos = next_node
       if not self.curr_pos.same_as(self.position_history[-1]):
@@ -113,8 +121,8 @@ class PartiallyObservablePlanner(ABC):
         print('Goal reached!')
         break
 
-      self.observe_world()
-      self.update_plan()
+      # update the planner
+      self.update_planner()
 
       step += 1
 
