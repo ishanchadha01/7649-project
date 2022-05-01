@@ -93,8 +93,6 @@ class PartiallyObservablePlanner(ABC):
         shutil.rmtree(self.tmp_img_dir)
       os.makedirs(self.tmp_img_dir)
       self.render(save_step=0) # render out initial state
-    else:
-      self.render(visualize=True)
     
     # make initial observation
     self.observe_world()
@@ -170,7 +168,7 @@ class PartiallyObservablePlanner(ABC):
         # save the image
         plt.savefig(self.tmp_img_path(last_step, extra_save_count))
     # if visualize or not saving or displaying the nth step
-    if visualize or (save_step is None and not save_frame) or (self.display_every_n >= 1 and save_step is not None and (save_step % self.display_every_n == 0)):
+    if visualize or (save_step is None and not save_frame) or (self.display_every_n >= 1 and save_step is not None and save_step > 0 and (save_step % self.display_every_n == 0)):
       if not self.force_no_visualization:
         plt.show()
     plt.close()

@@ -128,7 +128,35 @@ def plot_world(world: World, draw_obstacles: bool = True, **kwargs):
   ax.set_ylim([0,world.dims[1]])
   return fig,ax
 
-def plot_planner(world: World = None, curr_pos: Node = None, goal:Node = None, observations: BaseGeometry = None, position_history: list[Node] = None, rrt_tree:list[Node] = None, rrt_parents:dict = None, rrt_children:defaultdict[set] = None, planned_path:list[Node] = None, free_points:MultiPoint=None, extra_points:MultiPoint=None, **kwargs):
+
+def plot_potential_field(field, /,*, center=None, lim=None, figsize=(8,8), **kwargs):
+    """
+    Plot the vector field at a given center with bounds of [center-lim,center+lim] in both x,y directions
+    """
+    ax = kwargs.pop('ax', None)
+    if ax is None:
+      fig,ax = plt.subplots(figsize=figsize)
+    else:
+      fig=None
+    
+    field = normalize_field(field)
+    dx,dy = (field[:,:,0], field[:,:,1])
+    mags = np.linalg.norm(field, axis=2)
+
+    shape = field.shape[:2]
+    x, y = np.meshgrid(np.arange(shape[0],dtype=int), np.arange(shape[1],dtype=int))
+
+    if center is None:
+      center = (shape[0]//2, shape[1]//2)
+    if lim is None:
+      lim = min(shape[0], shape[1])//2
+
+    ax.quiver(crop_field(x,center,lim), crop_field(y,center,lim), crop_field(dx,center,lim), crop_field(dy,center,lim), crop_field(mags,center,lim), angles='xy', scale_units='xy', scale=1, cmap=plt.cm.magma)
+
+    return fig,ax
+
+
+def plot_planner(world: World = None, curr_pos: Node = None, goal:Node = None, observations: BaseGeometry = None, position_history: list[Node] = None, rrt_tree:list[Node] = None, rrt_parents:dict = None, rrt_children:defaultdict[set] = None, planned_path:list[Node] = None, free_points:MultiPoint=None, extra_points:MultiPoint=None, potential_field:np.ndarray = None, **kwargs):
   if 'fig_ax' in kwargs:
     fig,ax = kwargs.pop('fig_ax')
   else:
@@ -140,6 +168,9 @@ def plot_planner(world: World = None, curr_pos: Node = None, goal:Node = None, o
   if observations is not None:
     plot_polygons(observations, ax=ax, facecolor='green', edgecolor='blue')
   
+  if potential_field is not None:
+    plot_potential_field(potential_field, ax=ax)
+
   if draw_intersections is not None:
     if draw_intersections.is_empty:
       pass
@@ -149,8 +180,10 @@ def plot_planner(world: World = None, curr_pos: Node = None, goal:Node = None, o
     else:
       plot_points(list(draw_intersections.coords), ax=ax, marker="o", markersize=10, markeredgecolor="purple", markerfacecolor="purple", linewidth=3)
   
-  if rrt_tree is not None:
+  # only draw RRT tree when there is no potential field being drawn
+  if rrt_tree is not None and potential_field is None:
     plot_points(rrt_tree, parents_map=rrt_parents, children_map=rrt_children, ax=ax, marker=".", markersize=3, markeredgecolor="yellow", markerfacecolor="yellow", edgecolor='yellow', linewidth=1)
+  
   if position_history is not None:
     plot_points(position_history, ax=ax, marker=".", markersize=3, markeredgecolor="pink", markerfacecolor="pink", edgecolor='pink', linewidth=1)
   if planned_path is not None:
@@ -172,30 +205,3 @@ def plot_planner(world: World = None, curr_pos: Node = None, goal:Node = None, o
   
   fig.set_size_inches(8,8)
   return fig,ax
-
-def plot_potential_field(field, /,*, center=None, lim=None, figsize=(8,8), **kwargs):
-    '''
-    Plot the vector field at a given center with bounds of [center-lim,center+lim] in both x,y directions
-    '''
-    if isinstance(field, np.ndarray):
-      field = normalize_field(field)
-      dx,dy = (field[:,:,0], field[:,:,1])
-      shape = field.shape[:2]
-    else:
-      print(f'Plotting field using packed dx,dy tuple')
-      dx,dy = field
-      shape = dx.shape[:2]
-    x, y = np.meshgrid(np.arange(shape[0],dtype=int), np.arange(shape[1],dtype=int))
-
-    plt.figure(figsize=figsize)
-
-    if center is None:
-      center = (shape[0]//2, shape[1]//2)
-    if lim is None:
-      lim = min(shape[0], shape[1])//2
-
-    # Reverse y coordinates because image and axes y are reverses.
-    plt.quiver(crop_field(x,center,lim), crop_field(y,center,lim), crop_field(dx,center,lim), crop_field(dy,center,lim))
-    # plt.axis('off')
-    plt.show()
-
