@@ -45,8 +45,8 @@ def main(Planner, obstacle_str=obj, start_pt=obj, goal_pt=obj, *args, **kwargs):
     goal = goal_pt
 
 
-  random.seed(1)
-  np.random.seed
+  # random.seed(1)
+  # np.random.seed
 
   if OBSTACLE_STR is None:
     fig,ax = plot_world(world)
@@ -58,6 +58,6 @@ def main(Planner, obstacle_str=obj, start_pt=obj, goal_pt=obj, *args, **kwargs):
 
   print(f'Start: {start} -> Goal: {goal}')
 
-  planner: PartiallyObservablePlanner = Planner(world=world, x_start=Node(start), x_goal=Node(goal), gui=True, **kwargs)
+  planner: PartiallyObservablePlanner = Planner(world=world, x_start=Node(start), x_goal=Node(goal), gui=kwargs.pop('gui', True), **kwargs)
   planner.run()
   return None

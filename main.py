@@ -3,7 +3,7 @@ import shutil
 from matplotlib import pyplot as plt
 from farrt.PartiallyObservablePlanner import PartiallyObservablePlanner
 
-from farrt.planners import RRTStar, FARRTStar
+from farrt.planners import RRTX2, FARRTStar2
 from farrt.plot import plot_point, plot_world
 from farrt.world import World
 
@@ -47,5 +47,5 @@ if __name__ == '__main__':
   plot_point(ax, goal, marker=".", markersize=6, markeredgecolor="green", markerfacecolor="green")
   plt.show()
 
-  comp = Comparison([FARRTStar, RRTStar], world, start, goal, gui=True, force_no_visualization=True)
+  comp = Comparison([FARRTStar2, RRTX2], world, start, goal, gui=True, force_no_visualization=True)
   comp.run()

@@ -1,0 +1,346 @@
+MULTIPOLYGON (((20 75, 45 75, 50 75, 50 70, 50 30, 50 25, 45 25, 20 25, 20 30, 45 30, 45 70, 20 70, 20 75)), ((70 100, 80 100, 80 55, 70 55, 70 100)), ((80 45, 80 0, 70 0, 70 45, 80 45)))
+Start: POINT (40 50) -> Goal: POINT (90 50)
+QStandardPaths: XDG_RUNTIME_DIR not set, defaulting to '/tmp/runtime-muditg317'
+Do first rrt plan! (40.0, 50.0) -> (90.0, 50.0)
+RRT building iteration 0
+RRT building iteration 200
+RRT building iteration 400
+RRT building iteration 600
+RRT building iteration 800
+RRT building iteration 1000
+RRT building iteration 1200
+RRT building iteration 1400
+RRT building iteration 1600
+RRT building iteration 1800
+RRT building iteration 2000
+RRT building iteration 2200
+RRT building iteration 2400
+RRT building iteration 2600
+RRT building iteration 2800
+RRT building iteration 3000
+RRT building iteration 3200
+RRT building iteration 3400
+RRT building iteration 3600
+RRT building iteration 3800
+RRT building iteration 4000
+RRT building iteration 4200
+RRT building iteration 4400
+RRT building iteration 4600
+RRT building iteration 4800
+First plan complete. Ends at POINT (40 50) with cost 59.31769984009151
+Path: 20
+Step: 1 - Location: (40.0, 50.0) - Distance: 50.0
+Path is inconsistent with new obstacles
+Severing tree...
+removed: 36
+closest: 19
+freed: 299
+Updating potential field...
+Rewiring free points...
+FARRT rewiring iteration 0
+Planning complete
+Step: 2 - Location: (38.955519734819774, 46.95107623244396) - Distance: 51.13545640436528
+Path is inconsistent with new obstacles
+Severing tree...
+removed: 2
+closest: 16
+freed: 378
+Updating potential field...
+Rewiring free points...
+FARRT rewiring iteration 0
+Planning complete
+Step: 3 - Location: (38.78330240696862, 44.37193917424562) - Distance: 51.524995691357574
+Path is inconsistent with new obstacles
+Severing tree...
+removed: 1
+closest: 22
+freed: 78
+Updating potential field...
+Rewiring free points...
+FARRT rewiring iteration 0
+Planning complete
+Step: 4 - Location: (38.4982831735625, 41.62878490996594) - Distance: 52.17762047232673
+Path is inconsistent with new obstacles
+Severing tree...
+removed: 2
+closest: 21
+freed: 94
+Updating potential field...
+Rewiring free points...
+FARRT rewiring iteration 0
+Planning complete
+Step: 5 - Location: (38.42898104591011, 39.09254018112378) - Distance: 52.71188362849024
+Path is inconsistent with new obstacles
+Severing tree...
+removed: 2
+closest: 21
+freed: 218
+Updating potential field...
+Rewiring free points...
+FARRT rewiring iteration 0
+Planning complete
+Step: 6 - Location: (38.77991184263655, 35.99398730850102) - Distance: 53.10052563169703
+Path is inconsistent with new obstacles
+Severing tree...
+removed: 21
+closest: 24
+freed: 140
+Updating potential field...
+Rewiring free points...
+FARRT rewiring iteration 0
+Planning complete
+Step: 7 - Location: (37.63737112333371, 38.5584698380062) - Distance: 53.598073802360666
+Step: 8 - Location: (35.4019271989991, 41.031100334515244) - Distance: 55.32983566569602
+Step: 9 - Location: (36.53455208937207, 43.97570223281895) - Distance: 53.80377573992118
+Step: 10 - Location: (37.43829685003378, 46.97344785142365) - Distance: 52.648766898506
+Step: 11 - Location: (36.688817441487835, 47.816109087411924) - Distance: 53.35589531912192
+Step: 12 - Location: (37.548134769939104, 50.91257756809636) - Distance: 52.459803315779446
+Step: 13 - Location: (38.68817210533275, 53.59331131798008) - Distance: 51.43749185292646
+Step: 14 - Location: (39.57519096132729, 56.50762638691832) - Distance: 50.842999201250166
+Path is inconsistent with new obstacles
+Severing tree...
+removed: 7
+closest: 32
+freed: 654
+Updating potential field...
+Rewiring free points...
+FARRT rewiring iteration 0
+Planning complete
+Step: 15 - Location: (40.849503717559074, 59.44272330192349) - Distance: 50.049338738558056
+Path is inconsistent with new obstacles
+Severing tree...
+removed: 6
+closest: 30
+freed: 32
+Updating potential field...
+Rewiring free points...
+FARRT rewiring iteration 0
+FARRT rewiring iteration 200
+FARRT rewiring iteration 400
+FARRT rewiring iteration 600
+FARRT rewiring iteration 800
+FARRT rewiring iteration 1000
+FARRT rewiring iteration 1200
+FARRT rewiring iteration 1400
+Planning complete
+Step: 16 - Location: (40.41293932695299, 61.378813296194934) - Distance: 50.875868328924945
+Path is inconsistent with new obstacles
+Severing tree...
+removed: 10
+closest: 33
+freed: 1008
+Updating potential field...
+Rewiring free points...
+FARRT rewiring iteration 0
+FARRT rewiring iteration 200
+FARRT rewiring iteration 400
+FARRT rewiring iteration 600
+FARRT rewiring iteration 800
+FARRT rewiring iteration 1000
+Planning complete
+Step: 17 - Location: (38.12489653408298, 63.28203935977187) - Distance: 53.54847270608308
+Path is inconsistent with new obstacles
+Severing tree...
+removed: 11
+closest: 41
+freed: 534
+Updating potential field...
+Rewiring free points...
+FARRT rewiring iteration 0
+FARRT rewiring iteration 200
+FARRT rewiring iteration 400
+FARRT rewiring iteration 600
+Planning complete
+Step: 18 - Location: (37.072124951097, 63.261484177802764) - Distance: 54.56397089463341
+Step: 19 - Location: (34.545914720119896, 63.317790202992256) - Distance: 57.03086103259473
+Path is inconsistent with new obstacles
+Severing tree...
+removed: 0
+closest: 47
+freed: 200
+Updating potential field...
+Rewiring free points...
+FARRT rewiring iteration 0
+Planning complete
+Step: 20 - Location: (32.132885645641444, 61.413820666701035) - Distance: 58.98201612281511
+Step: 21 - Location: (29.046810939577142, 62.50667551813667) - Distance: 62.22305191126205
+Path is inconsistent with new obstacles
+Severing tree...
+removed: 8
+closest: 46
+freed: 233
+Updating potential field...
+Rewiring free points...
+FARRT rewiring iteration 0
+Planning complete
+Step: 22 - Location: (26.2963554408311, 64.48608995315774) - Distance: 65.32994054988805
+Path is inconsistent with new obstacles
+Severing tree...
+removed: 16
+closest: 45
+freed: 172
+Updating potential field...
+Rewiring free points...
+FARRT rewiring iteration 0
+Planning complete
+Step: 23 - Location: (25.934404260606968, 61.537282573776714) - Distance: 65.09615539054904
+Step: 24 - Location: (25.22495028748783, 60.477180660661034) - Distance: 65.61690620453355
+Step: 25 - Location: (25.954079177710813, 57.714488009657835) - Distance: 64.50886217587542
+Step: 26 - Location: (26.40690617294367, 56.217879935067785) - Distance: 63.89635054824108
+Step: 27 - Location: (25.72034458748153, 53.10135055500852) - Distance: 64.35442855947962
+Step: 28 - Location: (25.888426502006958, 50.44673613221088) - Distance: 64.11312993108656
+Step: 29 - Location: (26.28313891220436, 47.57277207690311) - Distance: 63.763075696457015
+Step: 30 - Location: (26.37853903639045, 45.80371220698726) - Distance: 63.75969829277646
+Step: 31 - Location: (27.559205037124972, 42.68647963532683) - Distance: 62.86764235853202
+Step: 32 - Location: (27.67389689221772, 39.828821520395884) - Distance: 63.15058194716712
+Path is inconsistent with new obstacles
+Severing tree...
+removed: 0
+closest: 50
+freed: 248
+Updating potential field...
+Rewiring free points...
+FARRT rewiring iteration 0
+Planning complete
+Step: 33 - Location: (29.62610299563387, 38.76224938700411) - Distance: 61.410866125903965
+Path is inconsistent with new obstacles
+Severing tree...
+removed: 3
+closest: 47
+freed: 401
+Updating potential field...
+Rewiring free points...
+FARRT rewiring iteration 0
+FARRT rewiring iteration 200
+Planning complete
+Step: 34 - Location: (28.771856230964875, 36.49244494013049) - Distance: 62.70039579697278
+Path is inconsistent with new obstacles
+Severing tree...
+removed: 15
+closest: 47
+freed: 168
+Updating potential field...
+Rewiring free points...
+FARRT rewiring iteration 0
+FARRT rewiring iteration 200
+Planning complete
+Step: 35 - Location: (26.456631457758398, 34.40563302884769) - Distance: 65.42892301517813
+Path is inconsistent with new obstacles
+Severing tree...
+removed: 3
+closest: 42
+freed: 227
+Updating potential field...
+Rewiring free points...
+FARRT rewiring iteration 0
+FARRT rewiring iteration 200
+FARRT rewiring iteration 400
+FARRT rewiring iteration 600
+FARRT rewiring iteration 800
+Planning complete
+Step: 36 - Location: (29.6650020016218, 36.18137350869903) - Distance: 61.897224667753775
+Step: 37 - Location: (29.342912446698843, 37.71071755890765) - Distance: 61.88948806837703
+Step: 38 - Location: (26.88925853022706, 38.387450278932626) - Distance: 64.17021894842482
+Step: 39 - Location: (23.58868334838444, 38.85362039821921) - Distance: 67.34021649525747
+Step: 40 - Location: (20.986571455781547, 36.84439380711389) - Distance: 70.25612637863156
+Step: 41 - Location: (19.99691135094697, 35.59794258738878) - Distance: 71.46923588596233
+Step: 42 - Location: (17.90245364194362, 33.46612884771183) - Distance: 73.96908196086089
+Step: 43 - Location: (16.438500940689075, 31.103392483037773) - Distance: 75.9498250129855
+Step: 44 - Location: (15.741956796164358, 28.163092478017443) - Distance: 77.40224486787407
+Step: 45 - Location: (15.77010103732333, 26.04454971578361) - Distance: 77.99962498838536
+Step: 46 - Location: (17.060638873660952, 23.18484049995849) - Distance: 77.71231035383755
+Step: 47 - Location: (19.29893400126829, 21.10265053939716) - Distance: 76.37864583249181
+Step: 48 - Location: (21.313043936294562, 20.1561169196413) - Distance: 74.89028835978348
+Step: 49 - Location: (24.294862399657372, 19.799433826434555) - Distance: 72.31347940933186
+Step: 50 - Location: (26.499927062385577, 18.496086834116756) - Distance: 70.88551197420995
+Step: 51 - Location: (28.41794104760528, 18.591578150528175) - Distance: 69.12914687662938
+Step: 52 - Location: (31.10828446129024, 18.485451680320793) - Distance: 66.79371912751755
+Step: 53 - Location: (32.55302401352214, 18.848181685243834) - Distance: 65.34975772186567
+Step: 54 - Location: (35.41797328208947, 19.372478297280715) - Distance: 62.58788002708863
+Step: 55 - Location: (37.3696784879416, 20.08640583275498) - Distance: 60.53737571505121
+Step: 56 - Location: (39.377180485806356, 20.6654673878987) - Distance: 58.507987994265015
+Step: 57 - Location: (41.60492178923626, 20.5512000878901) - Distance: 56.65082004074984
+Path is inconsistent with new obstacles
+Severing tree...
+removed: 7
+closest: 48
+freed: 689
+Updating potential field...
+Rewiring free points...
+FARRT rewiring iteration 0
+Planning complete
+Step: 58 - Location: (44.105153259005384, 19.601606416241236) - Distance: 55.04906257015182
+Step: 59 - Location: (46.69530355253045, 20.55681565557137) - Distance: 52.3659988804519
+Step: 60 - Location: (49.412535522051634, 21.379448438327135) - Distance: 49.6636511388671
+Step: 61 - Location: (52.16385085152247, 22.06506470395092) - Distance: 47.03121083259802
+Step: 62 - Location: (54.460248549600486, 22.959747434245337) - Distance: 44.6570172758546
+Step: 63 - Location: (55.74002146194788, 23.346353326838674) - Distance: 43.406946568556464
+Step: 64 - Location: (58.250756825297515, 24.818025299145663) - Distance: 40.52340424990058
+Step: 65 - Location: (59.88840048946135, 25.637492821604223) - Distance: 38.732934062635344
+Step: 66 - Location: (62.9449110326435, 25.484727496123515) - Distance: 36.50994967088968
+Path is inconsistent with new obstacles
+Severing tree...
+removed: 21
+closest: 67
+freed: 677
+Updating potential field...
+Rewiring free points...
+FARRT rewiring iteration 0
+Planning complete
+Step: 67 - Location: (62.646278131558105, 27.363841934746205) - Distance: 35.50523555774882
+Path is inconsistent with new obstacles
+Severing tree...
+removed: 0
+closest: 71
+freed: 34
+Updating potential field...
+Rewiring free points...
+FARRT rewiring iteration 0
+Planning complete
+Step: 68 - Location: (63.822580684116694, 29.86611181996581) - Distance: 33.0246988674492
+Path is inconsistent with new obstacles
+Severing tree...
+removed: 6
+closest: 65
+freed: 124
+Updating potential field...
+Rewiring free points...
+FARRT rewiring iteration 0
+Planning complete
+Step: 69 - Location: (63.37307817969162, 32.326266564896024) - Distance: 31.958626678252724
+Step: 70 - Location: (63.73247938780156, 34.08768484807725) - Distance: 30.711307569141045
+Path is inconsistent with new obstacles
+Severing tree...
+removed: 1
+closest: 52
+freed: 133
+Updating potential field...
+Rewiring free points...
+FARRT rewiring iteration 0
+Planning complete
+Step: 71 - Location: (63.86521118939972, 37.28235686298797) - Distance: 29.064852195307424
+Path is inconsistent with new obstacles
+Severing tree...
+removed: 4
+closest: 53
+freed: 76
+Updating potential field...
+Rewiring free points...
+FARRT rewiring iteration 0
+Planning complete
+Step: 72 - Location: (63.473814218903684, 39.792589835605035) - Distance: 28.4223460389432
+Step: 73 - Location: (64.34761364679134, 42.35512576936295) - Distance: 26.767312670803246
+Step: 74 - Location: (64.70241960878637, 43.38025403455867) - Distance: 26.14935200529629
+Step: 75 - Location: (66.94966041445358, 45.44185601641605) - Distance: 23.496698312403193
+Step: 76 - Location: (67.42786413332774, 45.47282840720188) - Distance: 23.021655027694038
+Step: 77 - Location: (69.32765132340421, 46.103376415667356) - Distance: 21.03638930911693
+Step: 78 - Location: (71.72539903067405, 47.57264193544045) - Distance: 18.435105309210225
+Step: 79 - Location: (74.36219071794012, 48.73973424906835) - Distance: 15.688510091944657
+Step: 80 - Location: (77.62321535020166, 48.638109669386445) - Distance: 12.45148760349953
+Step: 81 - Location: (80.28218862838874, 49.3119051033699) - Distance: 9.742142086881383
+Step: 82 - Location: (82.6240127419059, 50.130171407406365) - Distance: 7.377135801032313
+Step: 83 - Location: (84.4197545906894, 51.05046377211645) - Distance: 5.678257916356144
+Step: 84 - Location: (86.66928336046315, 49.96217606759091) - Distance: 3.3309313986857347
+Goal reached!
+Path length: 216.63961953187504
+Saved gif to farrtstar2-gifs/run-2.gif

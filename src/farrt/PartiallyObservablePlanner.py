@@ -93,7 +93,7 @@ class PartiallyObservablePlanner(ABC):
 
   def run(self) -> None:
     # setup any gui related stuff before the mainloop
-    if self.gui:
+    if self.gui or True:
       fig,ax = (None,None)#plt.subplots()
       if os.path.exists(self.tmp_img_dir):
         shutil.rmtree(self.tmp_img_dir)
@@ -108,7 +108,7 @@ class PartiallyObservablePlanner(ABC):
     while True:
       # render out the planner at the start of each step
       print(f'Step: {step} - Location: {self.curr_pos.coord.coords[0]} - Distance: {self.curr_pos.dist(self.x_goal)}')
-      if self.gui:
+      if self.gui or step == 2:
         self.render(save_step=step)
 
       # make observations
@@ -129,7 +129,12 @@ class PartiallyObservablePlanner(ABC):
 
       step += 1
 
-    if self.gui:
+    path_length = 0
+    for i in range(len(self.position_history) - 1):
+      path_length += self.position_history[i].dist(self.position_history[i+1])
+    print(f'Path length: {path_length}')
+
+    if self.gui or True:
       self.render(save_step=step)
       self.save_gif()
       self.delete_tmps()

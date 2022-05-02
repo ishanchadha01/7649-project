@@ -1,0 +1,307 @@
+MULTIPOLYGON (((20 75, 45 75, 50 75, 50 70, 50 30, 50 25, 45 25, 20 25, 20 30, 45 30, 45 70, 20 70, 20 75)), ((70 100, 80 100, 80 55, 70 55, 70 100)), ((80 45, 80 0, 70 0, 70 45, 80 45)))
+Start: POINT (40 50) -> Goal: POINT (90 50)
+QStandardPaths: XDG_RUNTIME_DIR not set, defaulting to '/tmp/runtime-muditg317'
+Do first rrt plan! (40.0, 50.0) -> (90.0, 50.0)
+RRT building iteration 0
+RRT building iteration 200
+RRT building iteration 400
+RRT building iteration 600
+RRT building iteration 800
+RRT building iteration 1000
+RRT building iteration 1200
+RRT building iteration 1400
+RRT building iteration 1600
+RRT building iteration 1800
+RRT building iteration 2000
+RRT building iteration 2200
+RRT building iteration 2400
+RRT building iteration 2600
+RRT building iteration 2800
+RRT building iteration 3000
+RRT building iteration 3200
+RRT building iteration 3400
+RRT building iteration 3600
+RRT building iteration 3800
+RRT building iteration 4000
+RRT building iteration 4200
+RRT building iteration 4400
+RRT building iteration 4600
+RRT building iteration 4800
+First plan complete. Ends at POINT (40 50) with cost 59.31769984009151
+Path: 20
+Step: 1 - Location: (40.0, 50.0) - Distance: 50.0
+Path is inconsistent with new obstacles
+Severing tree...
+removed: 36
+closest: 19
+freed: 299
+Rewiring free points...
+RRTx rewiring iteration 0
+Planning complete
+Step: 2 - Location: (40.80763462029955, 47.4182857974946) - Distance: 49.26006556911358
+Path is inconsistent with new obstacles
+Severing tree...
+removed: 5
+closest: 14
+freed: 928
+Rewiring free points...
+RRTx rewiring iteration 0
+Planning complete
+Step: 3 - Location: (40.41723545889593, 45.95429552862644) - Distance: 49.74754530836933
+Path is inconsistent with new obstacles
+Severing tree...
+removed: 3
+closest: 14
+freed: 68
+Rewiring free points...
+RRTx rewiring iteration 0
+Planning complete
+Step: 4 - Location: (41.42661197587565, 42.77746217478475) - Distance: 49.10742384587906
+Path is inconsistent with new obstacles
+Severing tree...
+removed: 9
+closest: 22
+freed: 82
+Rewiring free points...
+RRTx rewiring iteration 0
+Planning complete
+Step: 5 - Location: (41.67570746176753, 39.45344915585426) - Distance: 49.46177295678777
+Path is inconsistent with new obstacles
+Severing tree...
+removed: 12
+closest: 18
+freed: 160
+Rewiring free points...
+RRTx rewiring iteration 0
+RRTx rewiring iteration 200
+RRTx rewiring iteration 400
+RRTx rewiring iteration 600
+RRTx rewiring iteration 800
+RRTx rewiring iteration 1000
+RRTx rewiring iteration 1200
+Planning complete
+Step: 6 - Location: (39.39541231447703, 40.15293413553196) - Distance: 51.55374866060619
+Step: 7 - Location: (39.3477716414713, 43.422522634761954) - Distance: 51.07750430644354
+Step: 8 - Location: (39.58361445538946, 44.9247681722412) - Distance: 50.67119407995346
+Step: 9 - Location: (39.85439815335271, 47.73836107649854) - Distance: 50.196577524595966
+Step: 10 - Location: (40.87917082178911, 50.910261467295335) - Distance: 49.1292625132295
+Path is inconsistent with new obstacles
+Severing tree...
+removed: 4
+closest: 22
+freed: 653
+Rewiring free points...
+RRTx rewiring iteration 0
+Planning complete
+Step: 11 - Location: (40.842859810788134, 53.24436277810849) - Distance: 49.264087542730394
+Path is inconsistent with new obstacles
+Severing tree...
+removed: 3
+closest: 31
+freed: 766
+Rewiring free points...
+RRTx rewiring iteration 0
+Planning complete
+Step: 12 - Location: (41.811684298409055, 56.140838748641045) - Distance: 48.578016331392206
+Path is inconsistent with new obstacles
+Severing tree...
+removed: 7
+closest: 33
+freed: 67
+Rewiring free points...
+RRTx rewiring iteration 0
+RRTx rewiring iteration 200
+RRTx rewiring iteration 400
+RRTx rewiring iteration 600
+RRTx rewiring iteration 800
+RRTx rewiring iteration 1000
+RRTx rewiring iteration 1200
+RRTx rewiring iteration 1400
+Planning complete
+Step: 13 - Location: (37.773455038853996, 55.064287142910096) - Distance: 52.47150658066194
+Step: 14 - Location: (36.834486387883224, 55.08831816499049) - Distance: 53.40845269606999
+Step: 15 - Location: (35.4201606417927, 58.050070209811885) - Distance: 55.17030446490771
+Step: 16 - Location: (36.19444546902798, 59.66038275702872) - Distance: 54.66590064562827
+Step: 17 - Location: (37.13991926143003, 61.841613341203704) - Distance: 54.17021268382384
+Path is inconsistent with new obstacles
+Severing tree...
+removed: 12
+closest: 38
+freed: 1202
+Rewiring free points...
+RRTx rewiring iteration 0
+Planning complete
+Step: 18 - Location: (39.425359902948045, 62.09403872646392) - Distance: 52.00057685894979
+Path is inconsistent with new obstacles
+Severing tree...
+removed: 3
+closest: 34
+freed: 51
+Rewiring free points...
+RRTx rewiring iteration 0
+RRTx rewiring iteration 200
+RRTx rewiring iteration 400
+RRTx rewiring iteration 600
+RRTx rewiring iteration 800
+RRTx rewiring iteration 1000
+RRTx rewiring iteration 1200
+Planning complete
+Step: 19 - Location: (39.420028361853284, 60.89456713999264) - Distance: 51.73997607347276
+Step: 20 - Location: (36.0979006458335, 60.621476404953384) - Distance: 54.9386209856729
+Step: 21 - Location: (33.01172591472636, 59.36185874860408) - Distance: 57.752123618505024
+Step: 22 - Location: (30.69628317513915, 60.26521051572541) - Distance: 60.18559110098897
+Path is inconsistent with new obstacles
+Severing tree...
+removed: 1
+closest: 55
+freed: 533
+Rewiring free points...
+RRTx rewiring iteration 0
+RRTx rewiring iteration 200
+Planning complete
+Step: 23 - Location: (30.659855983922355, 63.1032716232009) - Distance: 60.76963402127923
+Path is inconsistent with new obstacles
+Severing tree...
+removed: 10
+closest: 59
+freed: 586
+Rewiring free points...
+RRTx rewiring iteration 0
+RRTx rewiring iteration 200
+Planning complete
+Step: 24 - Location: (27.90462275705947, 64.74981141901672) - Distance: 63.823136963327435
+Path is inconsistent with new obstacles
+Severing tree...
+removed: 17
+closest: 55
+freed: 378
+Rewiring free points...
+RRTx rewiring iteration 0
+RRTx rewiring iteration 200
+RRTx rewiring iteration 400
+RRTx rewiring iteration 600
+RRTx rewiring iteration 800
+Planning complete
+Step: 25 - Location: (25.66064629992747, 65.53671462541985) - Distance: 66.18868434932645
+Path is inconsistent with new obstacles
+Severing tree...
+removed: 3
+closest: 64
+freed: 653
+Rewiring free points...
+RRTx rewiring iteration 0
+RRTx rewiring iteration 200
+Planning complete
+Step: 26 - Location: (23.674696037160103, 66.47127187930842) - Distance: 68.33994983232868
+Path is inconsistent with new obstacles
+Severing tree...
+removed: 1
+closest: 65
+freed: 305
+Rewiring free points...
+RRTx rewiring iteration 0
+RRTx rewiring iteration 200
+Planning complete
+Step: 27 - Location: (20.608164857284883, 67.44766477539409) - Distance: 71.5517140995817
+Step: 28 - Location: (18.722990291016806, 69.80308616850598) - Distance: 73.976849992763
+Step: 29 - Location: (18.96069954074585, 72.40768550051708) - Distance: 74.4895065041397
+Step: 30 - Location: (19.477692731321326, 75.70068248685182) - Distance: 75.05944912393043
+Step: 31 - Location: (22.47610988157805, 75.51285028029301) - Distance: 72.18297074898877
+Step: 32 - Location: (24.980009444640793, 75.93416582621138) - Distance: 70.00128662332166
+Step: 33 - Location: (27.978414665625138, 75.55911493200512) - Distance: 67.08163238544951
+Path is inconsistent with new obstacles
+Severing tree...
+removed: 13
+closest: 47
+freed: 396
+Rewiring free points...
+RRTx rewiring iteration 0
+Planning complete
+Step: 34 - Location: (30.717222153845114, 75.99963072110447) - Distance: 64.73351949948614
+Path is inconsistent with new obstacles
+Severing tree...
+removed: 2
+closest: 48
+freed: 129
+Rewiring free points...
+RRTx rewiring iteration 0
+Planning complete
+Step: 35 - Location: (34.09944574150459, 75.93061448516029) - Distance: 61.62198255480745
+Step: 36 - Location: (36.40785554301659, 76.96546512652313) - Distance: 59.99378515302992
+Path is inconsistent with new obstacles
+Severing tree...
+removed: 14
+closest: 42
+freed: 366
+Rewiring free points...
+RRTx rewiring iteration 0
+Planning complete
+Step: 37 - Location: (38.06569917294209, 76.97527907563513) - Distance: 58.52210935709466
+Path is inconsistent with new obstacles
+Severing tree...
+removed: 9
+closest: 43
+freed: 104
+Rewiring free points...
+RRTx rewiring iteration 0
+RRTx rewiring iteration 200
+Planning complete
+Step: 38 - Location: (40.09498960674933, 78.06234645984684) - Distance: 57.25386756528275
+Path is inconsistent with new obstacles
+Severing tree...
+removed: 2
+closest: 42
+freed: 274
+Rewiring free points...
+RRTx rewiring iteration 0
+Planning complete
+Step: 39 - Location: (43.35026840560392, 77.69976922420457) - Distance: 54.253798695606434
+Path is inconsistent with new obstacles
+Severing tree...
+removed: 3
+closest: 38
+freed: 211
+Rewiring free points...
+RRTx rewiring iteration 0
+Planning complete
+Step: 40 - Location: (43.92074926629713, 78.54597189350027) - Distance: 54.204887782597275
+Step: 41 - Location: (46.624989830881084, 77.51585819637076) - Distance: 51.36646726663177
+Step: 42 - Location: (49.50836228465697, 76.03073938568508) - Distance: 48.137014010385464
+Step: 43 - Location: (51.028092279009584, 74.47476654547171) - Distance: 46.019819522339866
+Step: 44 - Location: (53.077656452927336, 72.21744509284798) - Distance: 43.09146457782299
+Step: 45 - Location: (53.58438005254611, 69.97915626555175) - Distance: 41.53629811671639
+Step: 46 - Location: (54.489342875352364, 67.67287198003287) - Distance: 39.66531448818878
+Step: 47 - Location: (56.87045320054629, 65.4791252574504) - Distance: 36.56733774658791
+Step: 48 - Location: (59.079433495410846, 65.0455356025321) - Distance: 34.38676452549414
+Step: 49 - Location: (61.41009633909443, 63.45480938128699) - Distance: 31.59769749248559
+Path is inconsistent with new obstacles
+Severing tree...
+removed: 10
+closest: 44
+freed: 309
+Rewiring free points...
+RRTx rewiring iteration 0
+Planning complete
+Step: 50 - Location: (63.65813777684755, 62.47852788976106) - Distance: 29.14802503908439
+Path is inconsistent with new obstacles
+Severing tree...
+removed: 11
+closest: 34
+freed: 95
+Rewiring free points...
+RRTx rewiring iteration 0
+Planning complete
+Step: 51 - Location: (64.91148126999745, 60.176179204071865) - Distance: 27.073758425070455
+Step: 52 - Location: (66.86491941965207, 57.87072356421974) - Distance: 24.43727159245802
+Step: 53 - Location: (68.84970174632501, 55.41652818112324) - Distance: 21.832862701815113
+Step: 54 - Location: (70.5515811245756, 53.44381341176441) - Distance: 19.750970800672363
+Step: 55 - Location: (73.74302001084268, 53.869273488866675) - Distance: 16.71109438964151
+Step: 56 - Location: (76.42205692713297, 52.25566019813805) - Distance: 13.764030696692084
+Step: 57 - Location: (76.56998858331572, 52.09566876985146) - Distance: 13.592535975497759
+Step: 58 - Location: (79.7810857706151, 51.6599516949393) - Distance: 10.352856980421246
+Step: 59 - Location: (81.794514750851, 51.48574962077974) - Distance: 8.338911206485477
+Step: 60 - Location: (84.28298515178764, 51.16020029766039) - Distance: 5.833551534474674
+Step: 61 - Location: (87.43782177656371, 51.32069251663592) - Distance: 2.8825311745320774
+Goal reached!
+Path length: 161.8168526854952
+Saved gif to rrtx2-gifs/run-1.gif
