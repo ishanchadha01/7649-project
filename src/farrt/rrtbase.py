@@ -58,9 +58,11 @@ class RRTBase(PartiallyObservablePlanner):
     Determine the radius of the ball to search for nearby points
     """
     unit_volume = math.pi
+    num_vertices += 1 # not sure this is necessary but without it the default value is always 0??
     dimensions = len(self.world.dims)
     minx,miny,maxx,maxy = self.world.getBounds()
-    gamma = (2**dimensions)*(1.0 + 1.0/dimensions) * (maxx - minx) * (maxy - miny)
+    free_space = self.world.getBoundingPolygon().area - self.detected_obstacles.area
+    gamma = (2**dimensions)*(1.0 + 1.0/dimensions) * free_space
     ball_radius = min(
       ((gamma/unit_volume) * math.log(num_vertices) / num_vertices)**(1.0/dimensions),
       self.steer_distance
@@ -74,7 +76,7 @@ class RRTBase(PartiallyObservablePlanner):
     Ensure the new point is further than the buffer radius from existing obstacles
     """
     if random.random() < self.eps and goal_pt is not None: # some % chance of returning goal node
-      return goal_pt
+      return as_point(goal_pt)
     
     # use default buffer for obstacle avoidance
     if buffer_radius is None:
@@ -120,7 +122,7 @@ class RRTBase(PartiallyObservablePlanner):
     """
     Check if the point is obstacle free
     """
-    return self.detected_obstacles.contains(as_point(v_new))
+    return not self.detected_obstacles.contains(as_point(v_new))
 
   def edge_obstacle_free(self, x_nearest: Point, x_new: Point) -> bool:
     """
@@ -133,8 +135,13 @@ class RRTBase(PartiallyObservablePlanner):
     Find all points in the tree within some radius of the new point
     Used for finding shortest paths and rewiring
     """
-    nearby_points = multipoint_without(pt_source, x_new).intersection(x_new.buffer(radius))
-    return as_multipoint(nearby_points)
+    # print(f'Finding nearby points within {radius} of {x_new}')
+    # print(f'Searching {len(pt_source.geoms)} points in source within dist={x_new.distance(pt_source)} of {x_new} - radius={radius}')
+    # print(f'  {pt_source}')
+    # print(f' dist: {x_new.distance(pt_source)}')
+    nearby_points = as_multipoint(x_new.buffer(radius, 128).intersection(multipoint_without(pt_source, x_new)))
+    # print(f'  Found {len(nearby_points.geoms)} nearby points{" out of {}".format(pt_source) if len(nearby_points.geoms) == 0 else ""}')
+    return nearby_points
 
   def reached_goal(self, x_new: Point, *, goal: Point = None, threshold:float = None) -> bool:
     """
@@ -166,7 +173,10 @@ class RRTBase(PartiallyObservablePlanner):
       else: # add point before getting parent (such that final path will include endpoint but not root)
         path.append(curr)
         curr = self.get_parent(curr)
-        
+      if path[-1] in path[:-1]:
+        print("ERROR: path contains a node more than once!")
+        self.render(visualize=True, extra_points=path)
+        break
     if not reverse: # invert condition because path is already reversed since iterating backwards via parents
       path.reverse() # curr pos first
     
@@ -198,4 +208,4 @@ class RRTBase(PartiallyObservablePlanner):
     self.cost_to_goal[pt2tuple(point)] = cost
 
   def get_edge_cost(self, point1: Point, point2: Point) -> float:
-    return point1.distance(point2)
+    return as_point(point1).distance(as_point(point2))

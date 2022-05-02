@@ -1,6 +1,7 @@
 import argparse
+from collections import defaultdict
 import math
-from queue import Queue
+from queue import PriorityQueue, Queue
 import random
 from matplotlib import pyplot as plt
 import numpy as np
@@ -15,32 +16,85 @@ from farrt.plot import plot_point, plot_potential_field, plot_world
 from farrt.rrtstar import RRTStar
 from farrt.runner import main
 from farrt.world import World
-from farrt.utils import as_multipoint, as_multipolygon, as_point, multipoint_without, pt2tuple, shapely_edge
+from farrt.utils import as_multipoint, as_multipolygon, as_point, line2tuple, multipoint_without, pt2tuple, shapely_edge
 
 
 vertex_t = tuple[float,float]
 edge_t = tuple[vertex_t,vertex_t]
 
-class FARRTStar(RRTStar):
+class RRTX2(RRTStar):
 
   def __init__(self, *args, **kwargs) -> None:
-    self.merge_threshold = kwargs.pop('merge_threshold', None)
-    self.potential_field_force = kwargs.pop('potential_field_force', 5)
-    self.tree_attr_force = kwargs.pop('tree_attr_force', 0.5)
-    self.goal_attr_force = kwargs.pop('goal_attr_force', 0.2)
+    self.consistence_eps = kwargs.pop('consistence_eps', 0.01) # no larger than 1/2 robot width
+    
     super().__init__(*args, **kwargs)
-    if self.merge_threshold is None:
-      self.merge_threshold = self.steer_distance / 8
 
     self.iters = max(self.iters, 5000)
+    self.orphans: MultiPoint = MultiPoint()
+    
+    self.cost_to_goal: defaultdict[vertex_t, float] = defaultdict(lambda: float('inf'))
+    self.lookahead_estimate: dict[vertex_t, float] = defaultdict(lambda: float('inf'))
+    
+    self.traj_cost_map: dict[edge_t, float] = defaultdict(lambda: float('inf')) # d_pi from RRTx paper
 
-    self.free_points: MultiPoint = MultiPoint()
-    self.potential_field = np.zeros((*self.world.dims, len(self.world.dims)))
+    self.inconsistencyPQ: PriorityQueue = PriorityQueue()
+    self.queue_key_map: dict[vertex_t,tuple[float,float]] = dict() # needed to provide `set` API for the PQ
 
-  def setup_planner(self) -> None:
-    if not self.detected_obstacles.is_empty:
-      self.update_potential_field(self.detected_obstacles)
-    super().setup_planner()
+  def build_rrt_tree(self, *, root: Point, goal_pt: Point, goal_threshold:float = None) -> None:
+    """
+    Builds the rrt tree from the root to the goal
+    """
+    if goal_threshold is None:
+      goal_threshold = self.goal_reached_thresh
+    
+    # empty out the tree and vertices
+    self.rrt_tree = MultiPoint()
+    self.rrt_vertices.clear()
+    self.rrt_edges.clear()
+    # add root point to tree
+    self.add_start_vertex(root)
+
+    final_pt = None
+    final_pt_cost = float('inf')
+
+    # iterate until max iterations is reached or goal is reached
+    i = 0
+    while i < self.iters or final_pt is None:
+      if self.display_every_n >= 1 and i % (self.display_every_n*2) == 0:
+        print(f"RRT building iteration {i}")
+        # if self.gui and i > 1000 and i % 1000 == 0:
+        #   self.render(visualize=True)
+
+      # sample a node, find the nearest existing node, and steer from nearest to sampled
+      x_rand = self.sample_free(goal_pt, buffer_radius=0 if i > self.iters/2 and final_pt is None else self.obstacle_avoidance_radius)
+      x_nearest = self.find_nearest(x_rand, pt_source=self.rrt_tree)
+      x_new = self.steer(x_nearest, x_rand)
+
+      # if there is an obstacle free path from the nearest node to the new node, analyze neighbors and add to tree
+      if self.edge_obstacle_free(x_nearest, x_new):
+        # find nearby points to the new point
+        nearby_points = self.find_nearby_pts(x_new, radius=self.find_ball_radius(num_vertices=len(self.rrt_vertices)), pt_source=self.rrt_tree)
+
+        # get the minimum point from the set
+        x_min,min_cost = self.get_min_cost_point(nearby_points, x_nearest, x_new)
+
+        # add the new point to the tree
+        self.add_vertex(pt=x_new,parent=x_min,cost=min_cost)
+
+        # Main difference between RRT and RRT*, modify the points in the nearest set to optimise local path costs.
+        self.do_rrtstar_rewiring(nearby_points, x_min, x_new)
+
+        # check if we've reached the goal of the tree building
+        if self.reached_goal(x_new, goal=goal_pt, threshold=goal_threshold):
+          if self.built_tree: # subsequent runs should just terminate once goal is reached
+            final_pt = x_new
+            break
+          else: # keep searching and update the shortest path
+            if min_cost < final_pt_cost:
+              final_pt = x_new
+              final_pt_cost = min_cost
+      i += 1
+    return final_pt,final_pt_cost
 
   def replan(self, new_obstacles: MultiPolygon, **kwargs):
     """
@@ -69,15 +123,15 @@ class FARRTStar(RRTStar):
 
     # push free points with the potential field
     #   different from proposal - only field updating for free points (not whole tree)
-    pushed_pts = self.apply_potential_field(self.free_points.union(freed_pts))
+    pushed_pts = self.apply_potential_field(self.orphans.union(freed_pts))
     # merge very close points into one
     pushed_pts = self.merge_points(pushed_pts)
 
     # set internal freed points to the field-updated free points
-    self.free_points = multipoint_without(pushed_pts, self.detected_obstacles)
+    self.orphans = multipoint_without(pushed_pts, self.detected_obstacles)
 
     # rewire the free points into the tree until curr pos is reached
-    final_pt,final_cost = self.do_farrt_rewiring(goal=self.curr_pos.coord, initial_frontier=closest_parents)
+    final_pt,final_cost = self.do_rrtx_rewiring(goal=self.curr_pos.coord, initial_frontier=closest_parents)
     
     # extract a plan from the tree and reverse it (to go from goal to start)
     self.planned_path = self.extract_path(endpoint=final_pt,root=self.x_goal_pt,reverse=True)
@@ -298,14 +352,14 @@ class FARRTStar(RRTStar):
       return goal_pt
     if frontier_radius is None:
       frontier_radius = self.steer_distance * 0.75
-    local_free_pts = as_multipoint(self.free_points.intersection(frontier.buffer(frontier_radius)))
+    local_free_pts = as_multipoint(self.orphans.intersection(frontier.buffer(frontier_radius)))
     while local_free_pts.is_empty:
       print('No free points found in local area, expanding search radius...')
       frontier_radius *= 1.5
-      local_free_pts = as_multipoint(self.free_points.intersection(frontier.buffer(frontier_radius)))
+      local_free_pts = as_multipoint(self.orphans.intersection(frontier.buffer(frontier_radius)))
     return random.choice(local_free_pts.geoms)
 
-  def do_farrt_rewiring(self, /,*, goal:Point, initial_frontier: MultiPoint):
+  def do_rrtx_rewiring(self, /,*, goal:Point, initial_frontier: MultiPoint):
     """
     Rewire the free points into the tree
     Sample from self.free_points based on the passed in initial_frontier (closest_parents)
@@ -325,7 +379,7 @@ class FARRTStar(RRTStar):
     frontier = initial_frontier
 
     i = 0
-    while not self.free_points.is_empty:# and (curr_vtx not in self.rrt_vertices):
+    while not self.orphans.is_empty:# and (curr_vtx not in self.rrt_vertices):
       if self.display_every_n >= 1 and i % (self.display_every_n*2) == 0:
         print(f"FARRT rewiring iteration {i}")
         if self.gui and i > 400 and i % 100 == 0:
@@ -338,7 +392,7 @@ class FARRTStar(RRTStar):
       x_new = self.steer(x_nearest, x_free)
       if x_new != x_free: # if the new point is not the same as the sampled point
         print(f"Steering from {x_nearest} to {x_free} to get {x_new} - frontier in white")
-        allow_for_far_goal = x_free == goal and not goal.buffer(self.steer_distance).intersects(self.free_points)
+        allow_for_far_goal = x_free == goal and not goal.buffer(self.steer_distance).intersects(self.orphans)
         if i > 99:
           if allow_for_far_goal:
             print('failed to steer to goal, must be too far! - allow new node creation')
@@ -356,7 +410,7 @@ class FARRTStar(RRTStar):
 
         # add the new point to the tree
         self.add_vertex(pt=x_new,parent=x_min,cost=min_cost)
-        self.free_points = self.free_points - x_new
+        self.orphans = self.orphans - x_new
         frontier = (frontier - x_min).union(x_new)
 
         # Main difference between RRT and RRT*, modify the points in the nearest set to optimise local path costs.
@@ -375,22 +429,92 @@ class FARRTStar(RRTStar):
 
     return final_pt,final_pt_cost
   
+  def get_key(self, pt: Point) -> tuple[float,float]:
+    """
+    Return the key of pt
+    """
+    g = self.get_cost_to_goal(pt)
+    lmc = self.get_lmc(pt)
+    return (min(g, lmc), g)
+
+  def test_key_less(self, v_1, v_2) -> bool:
+    """
+    Test if v_1 is less than v_2 in the key ordering
+    keyLess for Algo5: reduceInconsistency() from RRTx paper
+    """
+    return self.get_key(v_1) < self.get_key(v_2)
+
+  def insertPQ(self, pt: Point) -> None:
+    """
+    Insert v into the inconsistencyPQ
+    """
+    pt = pt2tuple(pt)
+    key = self.get_key(pt)
+    # only add it if not already present
+    if pt not in self.queue_key_map:
+      self.queue_key_map[pt] = key
+      self.inconsistencyPQ.put((key,pt))
+    else:
+      print(f'Warning: {pt} already in inconsistencyPQ - {self.queue_key_map[pt]}')
+
+  def updatePQ(self, pt: Point) -> None:
+    """
+    Update the key of v in the inconsistencyPQ
+    """
+    pt = pt2tuple(pt)
+    key = self.get_key(pt)
+    # only update it if it is already present
+    if pt in self.queue_key_map:
+      self.queue_key_map[pt] = key
+      self.inconsistencyPQ.put((key,pt))
+    else:
+      print(f'Warning: {pt} not in inconsistencyPQ, tried to update - {key}')
+
+  def popPQ(self) -> Point:
+    """
+    Pop the top of the inconsistencyPQ
+    """
+    key,point = self.inconsistencyPQ.get(block=False)
+    # ensure that the point is still in the inconsistent set
+    while point not in self.queue_key_map or self.queue_key_map[point] != key:
+      point = self.inconsistencyPQ.get(block=False)
+    self.queue_key_map.pop(point)
+    return point
+
+  def queue_not_empty(self) -> bool:
+    """
+    Return whether the inconsistencyPQ is not empty
+    """
+    try:
+      # key,point = self.inconsistencyPQ.get(block=False)
+      # self.inconsistencyPQ.put((key,point))
+      point = self.popPQ()
+      self.insertPQ(point)
+      return True
+    except queue.Empty:
+      return False
+
+  def get_lmc(self, node: Point) -> float:
+    return self.lookahead_estimate[pt2tuple(node)]
+  
+  def set_lmc(self, node: Point, lmc: float):
+    self.lookahead_estimate[pt2tuple(node)] = lmc
+
+  def get_traj_cost(self, edge):
+    edge = tuple(sorted(line2tuple(edge)))
+    return self.traj_cost_map.setdefault(edge, self.get_edge_cost(*edge))
+
+  def set_traj_cost(self, edge, cost):
+    edge = tuple(sorted(line2tuple(edge)))
+    self.traj_cost_map[edge] = cost
+
   def get_render_kwargs(self) -> dict:
     return {
       **super().get_render_kwargs(),
-      'free_points': as_multipoint(self.free_points),
+      'free_points': as_multipoint(self.orphans),
       'rrt_children': self.parent_to_children_map,
     }
-  
-  # def render_potential_field(self, **kwargs):
-  #   if self.potential_field is None:
-  #     return
-    
-  #   if self.force_no_visualization:
-  #     return
-
-  #   plot_potential_field(self.potential_field, **kwargs)
 
 
 if __name__=='__main__':
-  main(FARRTStar)
+  main(RRTX2)
