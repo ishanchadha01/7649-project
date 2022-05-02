@@ -480,4 +480,4 @@ if __name__=='__main__':
   obs = MAP_CLUTTER
   start = Point(13.436424411240122, 84.74337369372327)
   goal = Point(49.54350870919409, 44.949106478873816)
-  main(FARRTStar2, obs, start, goal, gui=False)
+  main(FARRTStar2, obs, start, goal, gui=True)
