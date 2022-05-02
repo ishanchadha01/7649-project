@@ -16,6 +16,7 @@ from shapely.geometry import Point, LineString
 from farrt.PartiallyObservablePlanner import PartiallyObservablePlanner
 from farrt.node import Node
 from farrt.plot import plot_polygons, plot_planner
+from farrt.runner import main
 from farrt.world import World
 
 import imageio
@@ -120,6 +121,4 @@ class RRT(PartiallyObservablePlanner):
 
 
 if __name__=='__main__':
-  world = World()
-  rrt = RRT(world=world, x_start=Node(world.random_position(not_blocked=True)), x_goal=Node(world.random_position(not_blocked=True)), gui=True)
-  rrt.run()
+  main(RRT)

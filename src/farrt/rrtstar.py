@@ -19,6 +19,7 @@ from farrt.PartiallyObservablePlanner import PartiallyObservablePlanner
 from farrt.node import Node
 from farrt.plot import plot_polygons, plot_planner
 from farrt.rrtbase import RRTBase
+from farrt.runner import main
 from farrt.world import World
 from farrt.utils import as_multipoint, as_point, multipoint_without, pt2tuple, shapely_edge
 
@@ -285,6 +286,4 @@ class RRTStar(RRTBase):
 
 
 if __name__=='__main__':
-  world = World()
-  rrt_star = RRTStar(world=world, x_start=Node(world.random_position(not_blocked=True)), x_goal=Node(world.random_position(not_blocked=True)), gui=True)
-  rrt_star.run()
+  main(RRTStar)
