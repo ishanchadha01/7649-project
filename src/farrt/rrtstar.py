@@ -153,20 +153,20 @@ class RRTStar(RRTBase):
     self.set_child_parent(child=pt, parent=parent)
     self.set_cost_to_goal(pt, cost)
 
-  def reassign_parent(self, /,*, pt: Point, parent: Point, cost: float, allow_same_parent:bool = False) -> None:
+  def reassign_parent(self, /,*, child: Point, parent: Point, cost: float, allow_same_parent:bool = False) -> None:
     """
     Reassign the parent of a vertex to a new parent, update cost to reach
     Remove old edges from the previous parent if present
     """
-    prev_parent = self.get_parent(pt)
+    prev_parent = self.get_parent(child)
 
     if prev_parent == parent:
       if allow_same_parent:
         return
       else:
-        raise ValueError(f'Cannot reassign parent to same parent - child:{pt} -> prev:{prev_parent} == new:{parent}')
+        raise ValueError(f'Cannot reassign parent to same parent - child:{child} -> prev:{prev_parent} == new:{parent}')
 
-    vtx = pt2tuple(pt)
+    vtx = pt2tuple(child)
     old_parent_vtx = pt2tuple(prev_parent)
     new_parent_vtx = pt2tuple(parent)
 
@@ -174,13 +174,14 @@ class RRTStar(RRTBase):
     self.rrt_edges.discard((vtx,old_parent_vtx))
     self.rrt_edges.add((new_parent_vtx,vtx))
     
-    self.set_child_parent(child=pt, parent=parent)
+    self.set_child_parent(child=child, parent=parent)
     if vtx in self.get_children(prev_parent):
-      print(f'Failed to remove child {pt} from parent {prev_parent} - {self.get_children(prev_parent)}')
+      print(f'Failed to remove child {child} from parent {prev_parent} - {self.get_children(prev_parent)}')
       print(f'Sever failure: {self.parent_to_children_map[pt2tuple(prev_parent)]}')
       print(prev_parent == parent)
     assert vtx not in self.get_children(prev_parent)
-    self.set_cost_to_goal(pt, cost)
+    if cost is not None:
+      self.set_cost_to_goal(child, cost)
 
   def do_rrtstar_rewiring(self, nearby_pts: MultiPoint, x_min: Point, x_new: Point) -> None:
     """
@@ -193,7 +194,7 @@ class RRTStar(RRTBase):
         cost_with_new = self.get_cost_to_goal(x_new) + self.get_edge_cost(x_new, x_nearby)
         if self.get_cost_to_goal(x_nearby) > cost_with_new:
           # allow reassigning to same parent if new node is current position (b/c curr pos may be sampled many times)
-          self.reassign_parent(pt=x_nearby, parent=x_new, cost=cost_with_new, allow_same_parent=x_new == self.curr_pos.coord)
+          self.reassign_parent(child=x_nearby, parent=x_new, cost=cost_with_new, allow_same_parent=x_new == self.curr_pos.coord)
 
   def build_rrt_tree(self, *, root: Point, goal_pt: Point, goal_threshold:float = None) -> None:
     """
@@ -276,11 +277,11 @@ class RRTStar(RRTBase):
     self.parent_to_children_map[parent].add(child)
 
   def get_edge_cost(self, point1: Point, point2: Point) -> float:
-    return point1.distance(point2)
+    return as_point(point1).distance(as_point(point2))
 
   def get_render_kwargs(self) -> dict:
     return {
-      'rrt_tree': self.rrt_tree,
+      'rrt_tree': as_multipoint(self.rrt_tree),
       'rrt_parents': self.child_to_parent_map
     }
 

@@ -193,7 +193,7 @@ class RRTBase(PartiallyObservablePlanner):
         return None
       else:
         print("ERROR: parent is None!", point)
-        self.render(visualize=True)
+        self.render(visualize=True,save_frame=True,extra_points=[point])
         raise ValueError(f"No parent found for point {point}")
     parent = self.child_to_parent_map[pt2tuple(point)]
     return Point(parent)

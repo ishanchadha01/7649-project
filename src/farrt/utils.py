@@ -66,8 +66,8 @@ def shapely_edge(pt0: Point, pt1: Point, /) -> LineString:
 def line2tuple(line: LineString, /) -> tuple[tuple[float,float],tuple[float,float]]:
   return tuple(as_linestring(line).coords)
 
-def multipoint_without(mp: MultiPoint, pt: Point) -> MultiPoint:
-  difference = as_multipoint(mp) - pt
+def multipoint_without(mp: MultiPoint, geom: BaseGeometry) -> MultiPoint:
+  difference = as_multipoint(mp) - geom
   return as_multipoint(difference)
 
 

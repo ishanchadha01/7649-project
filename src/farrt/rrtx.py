@@ -96,13 +96,15 @@ class RRTX(RRTBase):
     based on algo11: addNewObstacle(O) in RRTx paper
     """
     # get the points that are within the obstacles (or within half the obstacle avoidance radius of them)
-    conflicting_pts = as_multipoint(self.rrtx_graph.intersection(self.detected_obstacles.buffer(self.obstacle_avoidance_radius/2)))
+    conflicting_pts = as_multipoint(self.rrtx_graph.intersection(self.detected_obstacles))
 
     edges: set[edge_t] = set()
     for v_blocked in conflicting_pts.geoms:
       v_blocked = pt2tuple(v_blocked)
-      edges.update(map(lambda u_in: (u_in,v_blocked), self.get_in_neighbors(v_blocked)))
-      edges.update(map(lambda u_out: (v_blocked,u_out), self.get_out_neighbors(v_blocked)))
+      if v_blocked not in self.tree_vertices:
+        continue
+      edges.update(map(lambda u_in: (u_in,v_blocked), filter(lambda u: u in self.tree_vertices, self.get_in_neighbors(v_blocked))))
+      edges.update(map(lambda u_out: (v_blocked,u_out), filter(lambda u: u in self.tree_vertices, self.get_out_neighbors(v_blocked))))
 
     print(f'Conflicting pts: {len(conflicting_pts.geoms)}')
     print(f'Edges: {len(edges)}')
@@ -111,14 +113,20 @@ class RRTX(RRTBase):
       edge_geom = LineString(edge)
       # filter edges that intersect the new obstacles
       if not edge_geom.intersects(new_obstacles):
+        # print(f'Edge {edge} does not intersect new obstacles')
         continue
+      
+      # print(f'Edge {edge} intersects new obstacles')
 
       # update the cost to goal for the nodes that are affected by the new obstacle
       self.set_traj_cost(edge, float('inf'))
       v,u = edge
-      if self.get_parent(v) == u:
+      v_parent = self.get_parent(v, allow_none=True)
+      if v_parent is None or v_parent == as_point(u):
+        # print(f'{u=} is parent of {v=} - mark v as orphan')
         self.verify_orphan(v)
       if self.curr_pos.coord.intersects(edge_geom):
+        print(f'Current position intersects edge {edge}')
         pass # set pi_bot = 0?
     
     self.propogate_descendants()
@@ -130,26 +138,6 @@ class RRTX(RRTBase):
 
   def update_planner(self) -> None:
     pass
-    # print(f'Graph size: {len(self.rrtx_graph.geoms)}', end='')
-    # added = False
-    # if len(self.rrtx_graph.geoms) > self.iters * 0.99:
-    #   self.samples_per_turn = 0
-    # elif len(self.rrtx_graph.geoms) > self.iters * 0.75:
-    #   self.samples_per_turn = int(self.samples_per_turn * 0.5)
-    # for i in range(self.samples_per_turn):
-    #   # shrink ball radius
-    #   N = len(self.rrtx_graph.geoms)
-    #   # self.shrinking_ball_radius = math.floor((math.prod(self.world.dims) * math.log(N) / N) ** (1/2)) # radius of ball for neighbors
-    #   self.shrinking_ball_radius = self.find_ball_radius(N)
-
-    #   # print(f'Run update with N {N} - ball radius {self.shrinking_ball_radius}')
-
-    #   # sample a new node and add it to the tree
-    #   added |= self.do_sampling()
-    #   # if added:
-    #   #   print(f' -> {len(self.rrtx_graph.geoms)}', end='')
-    # if added:
-    #   print(f'Graph size: {len(self.rrtx_graph.geoms)}')
 
   def do_sampling(self) -> Point:
     """
@@ -189,32 +177,39 @@ class RRTX(RRTBase):
     based on Algo8: propogateDescendants() in RRTx paper
     """
     # add all descendants of orphans to orphan tree too
-    child_q: Queue = Queue()
+    for o in list(self.orphans):
+      self.orphans.update(self.get_children(o))
+    # child_q: Queue = Queue()
+    # for v in self.orphans:
+    #   child_q.put(v)
+    # while not child_q.empty():
+    #   v = child_q.get()
+    #   self.remove_tree_vtx(v)
+    #   self.insert_orphan_vtx(v)
+    #   children = self.get_children(v)
+    #   new_children = children - self.orphans
+    #   for child in new_children:
+    #     child_q.put(child)
+
     for v in self.orphans:
-      child_q.put(v)
-    while not child_q.empty():
-      v = child_q.get()
-      self.remove_tree_vtx(v)
-      self.insert_orphan_vtx(v)
-      children = self.get_children(v)
-      new_children = children - self.orphans
-      for child in new_children:
-        child_q.put(child)
-      
-    for v in self.orphans:
-      for u in (self.get_out_neighbors(v) | {pt2tuple(self.get_parent(v))}) - self.orphans:
+      v_parent = self.get_parent(v, allow_none=True)
+      parent_set = set() if v_parent is None else {pt2tuple(v_parent)}
+      for u in (self.get_out_neighbors(v) | parent_set) - self.orphans:
         self.set_cost_to_goal(u, float('inf'))
         self.verify_queue(u)
-    
-    for v in list(self.orphans):
-      self.remove_orphan_vtx(v)
-      self.insert_tree_vtx(v, add_to_graph=False)
+
+    for v in self.orphans:
+      # self.remove_orphan_vtx(v)
+      # self.insert_tree_vtx(v, add_to_graph=False)
       self.set_cost_to_goal(v, float('inf'))
       self.set_lmc(v, float('inf'))
       parent = self.get_parent(v, allow_none=True)
       if parent != None:
         self.remove_child(parent=parent, child=v)
         self.remove_parent(child=v)
+    
+    self.rrtx_graph = multipoint_without(self.rrtx_graph, as_multipoint(self.orphans))
+    self.orphans = set()
 
   def extend(self, v_new, radius) -> bool:
     """
@@ -287,7 +282,6 @@ class RRTX(RRTBase):
     make sure to queue inconsistent nodes to trigger a cascade of rewiring
     based on Algo4: rewireNeighbors(v) from RRTx paper
     """
-
     if self.get_cost_to_goal(v_new) - self.get_lmc(v_new) > self.consistence_eps:
       self.cull_neighbors(v_new, self.shrinking_ball_radius)
       parent = self.get_parent(v_new)
@@ -295,7 +289,7 @@ class RRTX(RRTBase):
         cost_through_v = self.get_traj_cost((u_in, v_new)) + self.get_lmc(v_new)
         if self.get_lmc(u_in) > cost_through_v:
           self.set_lmc(u_in, cost_through_v)
-          self.set_parent(child=v_new, parent=u_in)
+          self.set_parent(child=u_in, parent=v_new)
           if self.get_cost_to_goal(u_in) - self.get_lmc(u_in) > self.consistence_eps:
             # print(f'{u_in} is inconsistent')
             self.verify_queue(u_in)
@@ -359,7 +353,7 @@ class RRTX(RRTBase):
     based on Algo9: verrifyOrphan(v) from RRTx paper
     """
     pt = pt2tuple(pt)
-    self.queue_key_map.pop(pt, None)
+    # self.queue_key_map.pop(pt, None)
     self.tree_vertices.discard(pt)
     self.orphans.add(pt)
 
@@ -382,12 +376,12 @@ class RRTX(RRTBase):
     self.cull_neighbors(pt, self.shrinking_ball_radius)
     p_prime = None
     for u_out in self.get_out_neighbors(pt) - self.orphans: # N+(v) \ V^c_T
-      if self.get_parent(u_out) == as_point(pt): # p+_T(u) != v
+      if self.get_parent(u_out, allow_none=True) == as_point(pt): # p+_T(u) != v
         continue
       if self.get_lmc(pt) > self.get_traj_cost((pt, u_out)) + self.get_lmc(u_out):
         p_prime = u_out
     if p_prime is not None:
-      self.set_parent(child=p_prime, parent=pt)
+      self.set_parent(child=pt, parent=p_prime)
       self.set_lmc(p_prime, self.get_traj_cost((pt, p_prime)) + self.get_lmc(p_prime))
     # else:
     #   print(f'no children for {pt}')

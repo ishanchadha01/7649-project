@@ -30,6 +30,7 @@ class PartiallyObservablePlanner(ABC):
     self.x_goal = Node(as_point(x_goal))
     self.curr_pos = deepcopy(self.x_start)
 
+    self.explored_region = MultiPolygon()
     self.detected_obstacles = MultiPolygon()
     self.vision_radius = kwargs.get('vision_radius', 10)
     self.max_step_length = kwargs.get('max_step_length', self.vision_radius / 2)
@@ -54,6 +55,8 @@ class PartiallyObservablePlanner(ABC):
     """
     update the detected_obstacles geometry based on new observations from the world
     """
+    self.explored_region = as_multipolygon(self.explored_region.union(self.curr_pos.coord.buffer(self.vision_radius)))
+
     observations = self.world.make_observations(self.curr_pos, self.vision_radius)
     new_obstacles = as_multipolygon(observations - self.detected_obstacles)
     deleted_obstacles = as_multipolygon(self.detected_obstacles - observations)
